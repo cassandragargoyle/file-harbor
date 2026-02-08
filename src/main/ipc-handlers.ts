@@ -1,5 +1,6 @@
 import { ipcMain, dialog, shell, BrowserWindow } from 'electron';
 import path from 'node:path';
+import { randomUUID } from 'node:crypto';
 
 import { IPC_CHANNELS } from './ipc-channels';
 import type { DatabaseService } from './services/database';
@@ -18,9 +19,9 @@ import {
   validateLibrary,
   getDefaultLibraryPath,
 } from './lib/library-manager';
-import { loadSettings, updateSettings } from './lib/settings';
+import { loadSettings, saveSettings, updateWorkspace } from './lib/settings';
 import { ACCEPTED_EXTENSIONS } from '../shared/constants';
-import type { Category, DocumentSource, IngestResult } from '../shared/types';
+import type { Category, DocumentSource, IngestResult, Workspace } from '../shared/types';
 import { ipcLog } from './lib/logger';
 
 interface AppState {
@@ -28,11 +29,18 @@ interface AppState {
   libraryPath: string | null;
   pdfExtractor: PdfExtractor | null;
   watcher: WatcherService | null;
+  activeWorkspaceId: string | null;
+}
+
+interface LibraryCallbacks {
+  initializeServices: (workspace: Workspace) => void;
+  teardownServices: () => Promise<void>;
+  switchWorkspace: (workspaceId: string) => Promise<boolean>;
 }
 
 export function registerIpcHandlers(
   state: AppState,
-  onLibraryInitialized: (libraryPath: string) => void
+  callbacks: LibraryCallbacks
 ): void {
   // ── Library ───────────────────────────────────────────────────
 
@@ -54,8 +62,13 @@ export function registerIpcHandlers(
   ipcMain.handle(IPC_CHANNELS.LIBRARY_INITIALIZE, async (_event, libraryPath: string) => {
     try {
       initializeLibrary(libraryPath);
-      updateSettings({ libraryPath });
-      onLibraryInitialized(libraryPath);
+      const id = randomUUID();
+      const workspace: Workspace = { id, name: 'Default', libraryPath };
+      const settings = loadSettings();
+      settings.workspaces.push(workspace);
+      settings.activeWorkspaceId = id;
+      saveSettings(settings);
+      callbacks.initializeServices(workspace);
       return { success: true, path: libraryPath };
     } catch (err) {
       ipcLog.error('LIBRARY_INITIALIZE failed:', err);
@@ -312,6 +325,80 @@ export function registerIpcHandlers(
     }
   });
 
+  // ── Workspaces ──────────────────────────────────────────────
+
+  ipcMain.handle(IPC_CHANNELS.WORKSPACE_LIST, () => {
+    try {
+      return loadSettings().workspaces;
+    } catch (err) {
+      ipcLog.error('WORKSPACE_LIST failed:', err);
+      return [];
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.WORKSPACE_GET_ACTIVE, () => {
+    return state.activeWorkspaceId;
+  });
+
+  ipcMain.handle(IPC_CHANNELS.WORKSPACE_ADD, async (_event, name: string, libraryPath: string) => {
+    try {
+      initializeLibrary(libraryPath);
+      const id = randomUUID();
+      const workspace: Workspace = { id, name, libraryPath };
+      const settings = loadSettings();
+      settings.workspaces.push(workspace);
+      settings.activeWorkspaceId = id;
+      saveSettings(settings);
+      await callbacks.teardownServices();
+      callbacks.initializeServices(workspace);
+      return { success: true, workspace };
+    } catch (err) {
+      ipcLog.error('WORKSPACE_ADD failed:', err);
+      return { success: false, error: String(err) };
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.WORKSPACE_RENAME, (_event, workspaceId: string, newName: string) => {
+    try {
+      updateWorkspace(workspaceId, { name: newName });
+      return true;
+    } catch (err) {
+      ipcLog.error('WORKSPACE_RENAME failed:', err);
+      return false;
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.WORKSPACE_REMOVE, async (_event, workspaceId: string) => {
+    try {
+      const settings = loadSettings();
+      if (settings.workspaces.length <= 1) {
+        return { success: false, error: 'Cannot remove the last workspace' };
+      }
+      settings.workspaces = settings.workspaces.filter((w) => w.id !== workspaceId);
+      if (settings.activeWorkspaceId === workspaceId) {
+        settings.activeWorkspaceId = settings.workspaces[0].id;
+        saveSettings(settings);
+        await callbacks.switchWorkspace(settings.activeWorkspaceId);
+      } else {
+        saveSettings(settings);
+      }
+      return { success: true };
+    } catch (err) {
+      ipcLog.error('WORKSPACE_REMOVE failed:', err);
+      return { success: false, error: String(err) };
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.WORKSPACE_SWITCH, async (_event, workspaceId: string) => {
+    try {
+      const success = await callbacks.switchWorkspace(workspaceId);
+      return { success };
+    } catch (err) {
+      ipcLog.error('WORKSPACE_SWITCH failed:', err);
+      return { success: false };
+    }
+  });
+
   // ── Watcher ─────────────────────────────────────────────────
 
   ipcMain.handle(IPC_CHANNELS.WATCHER_SET_FOLDER, async () => {
@@ -326,7 +413,9 @@ export function registerIpcHandlers(
       if (state.watcher) {
         await state.watcher.start(folderPath);
       }
-      updateSettings({ watchedFolderPath: folderPath });
+      if (state.activeWorkspaceId) {
+        updateWorkspace(state.activeWorkspaceId, { watchedFolderPath: folderPath });
+      }
       return folderPath;
     } catch (err) {
       ipcLog.error('WATCHER_SET_FOLDER failed:', err);
@@ -348,7 +437,9 @@ export function registerIpcHandlers(
       if (state.watcher) {
         await state.watcher.stop();
       }
-      updateSettings({ watchedFolderPath: undefined });
+      if (state.activeWorkspaceId) {
+        updateWorkspace(state.activeWorkspaceId, { watchedFolderPath: undefined });
+      }
     } catch (err) {
       ipcLog.error('WATCHER_CLEAR_FOLDER failed:', err);
     }
@@ -361,13 +452,15 @@ export function registerIpcHandlers(
       return loadSettings();
     } catch (err) {
       ipcLog.error('SETTINGS_GET failed:', err);
-      return {};
+      return { version: 2, workspaces: [], activeWorkspaceId: '' };
     }
   });
 
   ipcMain.handle(IPC_CHANNELS.SETTINGS_SAVE_LAST_VIEW, (_event, view: string) => {
     try {
-      updateSettings({ lastView: view });
+      const settings = loadSettings();
+      settings.lastView = view;
+      saveSettings(settings);
     } catch (err) {
       ipcLog.error('SETTINGS_SAVE_LAST_VIEW failed:', err);
     }

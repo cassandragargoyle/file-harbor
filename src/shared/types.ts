@@ -37,6 +37,13 @@ export interface IngestResult {
   error?: string;
 }
 
+export interface Workspace {
+  id: string;
+  name: string;
+  libraryPath: string;
+  watchedFolderPath?: string;
+}
+
 export interface LibraryInfo {
   path: string;
   documentCount: number;

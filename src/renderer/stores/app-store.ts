@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { DocumentRecord, Category, DocumentCounts } from '../../shared/types';
+import type { DocumentRecord, Category, DocumentCounts, Workspace } from '../../shared/types';
 import * as ipc from '../lib/ipc';
 
 export type ViewType = 'inbox' | Category;
@@ -7,6 +7,11 @@ export type ViewType = 'inbox' | Category;
 interface AppState {
   // Library
   libraryPath: string | null;
+
+  // Workspaces
+  workspaces: Workspace[];
+  activeWorkspaceId: string | null;
+  activeWorkspaceName: string | null;
 
   // Navigation
   currentView: ViewType;
@@ -40,10 +45,19 @@ interface AppState {
   searchDocuments: (query: string) => Promise<void>;
   clearSearch: () => void;
   initialize: () => Promise<'onboarding' | 'ready'>;
+
+  // Workspace actions
+  switchWorkspace: (workspaceId: string) => Promise<void>;
+  addWorkspace: (name: string, libraryPath: string) => Promise<boolean>;
+  renameWorkspace: (id: string, name: string) => Promise<void>;
+  removeWorkspace: (id: string) => Promise<boolean>;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
   libraryPath: null,
+  workspaces: [],
+  activeWorkspaceId: null,
+  activeWorkspaceName: null,
   currentView: 'inbox',
   documents: [],
   selectedDocumentId: null,
@@ -119,10 +133,16 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   initialize: async () => {
     const settings = await ipc.getSettings();
-    if (settings.libraryPath) {
+    if (settings.workspaces && settings.workspaces.length > 0) {
+      const activeId = settings.activeWorkspaceId;
+      const activeWs = settings.workspaces.find((w) => w.id === activeId);
       const lastView = settings.lastView as ViewType | undefined;
+
       set({
-        libraryPath: settings.libraryPath,
+        workspaces: settings.workspaces,
+        activeWorkspaceId: activeId,
+        activeWorkspaceName: activeWs?.name ?? null,
+        libraryPath: activeWs?.libraryPath ?? null,
         currentView: lastView ?? 'inbox',
       });
       await get().loadDocuments();
@@ -130,5 +150,86 @@ export const useAppStore = create<AppState>((set, get) => ({
       return 'ready';
     }
     return 'onboarding';
+  },
+
+  switchWorkspace: async (workspaceId) => {
+    set({ isLoading: true });
+    const result = await ipc.switchWorkspace(workspaceId);
+    if (result.success) {
+      const workspaces = await ipc.listWorkspaces();
+      const ws = workspaces.find((w) => w.id === workspaceId);
+      set({
+        workspaces,
+        activeWorkspaceId: workspaceId,
+        activeWorkspaceName: ws?.name ?? null,
+        libraryPath: ws?.libraryPath ?? null,
+        currentView: 'inbox',
+        documents: [],
+        selectedDocumentId: null,
+        previewDocumentId: null,
+        searchQuery: '',
+        isSearching: false,
+      });
+      await get().loadDocuments();
+      await get().refreshCounts();
+    }
+    set({ isLoading: false });
+  },
+
+  addWorkspace: async (name, libraryPath) => {
+    const result = await ipc.addWorkspace(name, libraryPath);
+    if (result.success && result.workspace) {
+      const workspaces = await ipc.listWorkspaces();
+      set({
+        workspaces,
+        activeWorkspaceId: result.workspace.id,
+        activeWorkspaceName: result.workspace.name,
+        libraryPath: result.workspace.libraryPath,
+        currentView: 'inbox',
+        documents: [],
+        selectedDocumentId: null,
+        previewDocumentId: null,
+        searchQuery: '',
+        isSearching: false,
+      });
+      await get().loadDocuments();
+      await get().refreshCounts();
+      return true;
+    }
+    return false;
+  },
+
+  renameWorkspace: async (id, name) => {
+    await ipc.renameWorkspace(id, name);
+    const workspaces = await ipc.listWorkspaces();
+    const activeId = get().activeWorkspaceId;
+    const activeWs = workspaces.find((w) => w.id === activeId);
+    set({
+      workspaces,
+      activeWorkspaceName: activeWs?.name ?? get().activeWorkspaceName,
+    });
+  },
+
+  removeWorkspace: async (id) => {
+    const result = await ipc.removeWorkspace(id);
+    if (result.success) {
+      const workspaces = await ipc.listWorkspaces();
+      const activeId = await ipc.getActiveWorkspaceId();
+      const activeWs = workspaces.find((w) => w.id === activeId);
+      set({
+        workspaces,
+        activeWorkspaceId: activeId,
+        activeWorkspaceName: activeWs?.name ?? null,
+        libraryPath: activeWs?.libraryPath ?? null,
+        currentView: 'inbox',
+        documents: [],
+        selectedDocumentId: null,
+        previewDocumentId: null,
+      });
+      await get().loadDocuments();
+      await get().refreshCounts();
+      return true;
+    }
+    return false;
   },
 }));

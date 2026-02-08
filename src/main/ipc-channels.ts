@@ -26,6 +26,15 @@ export const IPC_CHANNELS = {
   WATCHER_FILE_INGESTED: 'watcher:file-ingested',
   WATCHER_ERROR: 'watcher:error',
 
+  // Workspaces
+  WORKSPACE_LIST: 'workspace:list',
+  WORKSPACE_ADD: 'workspace:add',
+  WORKSPACE_RENAME: 'workspace:rename',
+  WORKSPACE_REMOVE: 'workspace:remove',
+  WORKSPACE_SWITCH: 'workspace:switch',
+  WORKSPACE_GET_ACTIVE: 'workspace:get-active',
+  WORKSPACE_SWITCHED: 'workspace:switched',
+
   // Menu events (main -> renderer)
   MENU_IMPORT_FILES: 'menu:import-files',
 

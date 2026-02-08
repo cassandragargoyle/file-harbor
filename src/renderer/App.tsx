@@ -171,7 +171,10 @@ export default function App() {
   if (phase === 'onboarding') {
     return (
       <>
-        <WelcomeScreen onComplete={() => setPhase('ready')} />
+        <WelcomeScreen onComplete={async () => {
+          const result = await initialize();
+          setPhase(result);
+        }} />
         <Toaster theme="light" position="bottom-right" richColors />
       </>
     );

@@ -5,6 +5,7 @@ import type {
   IngestResult,
   LibraryInfo,
   DocumentCounts,
+  Workspace,
 } from '../../shared/types';
 
 const api = window.electronAPI;
@@ -47,6 +48,16 @@ export const getPathForFile = (file: File): string => api.getPathForFile(file);
 
 // Menu events
 export const onMenuImportFiles = (cb: () => void) => api.onMenuImportFiles(cb);
+
+// Workspaces
+export const listWorkspaces = (): Promise<Workspace[]> => api.listWorkspaces();
+export const addWorkspace = (name: string, libraryPath: string) =>
+  api.addWorkspace(name, libraryPath);
+export const renameWorkspace = (id: string, name: string) => api.renameWorkspace(id, name);
+export const removeWorkspace = (id: string) => api.removeWorkspace(id);
+export const switchWorkspace = (id: string) => api.switchWorkspace(id);
+export const getActiveWorkspaceId = (): Promise<string | null> => api.getActiveWorkspaceId();
+export const onWorkspaceSwitched = (cb: (id: string) => void) => api.onWorkspaceSwitched(cb);
 
 // Settings
 export const getSettings = () => api.getSettings();

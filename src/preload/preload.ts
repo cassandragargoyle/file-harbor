@@ -23,6 +23,13 @@ const IPC = {
   WATCHER_FILE_INGESTED: 'watcher:file-ingested',
   WATCHER_ERROR: 'watcher:error',
   MENU_IMPORT_FILES: 'menu:import-files',
+  WORKSPACE_LIST: 'workspace:list',
+  WORKSPACE_ADD: 'workspace:add',
+  WORKSPACE_RENAME: 'workspace:rename',
+  WORKSPACE_REMOVE: 'workspace:remove',
+  WORKSPACE_SWITCH: 'workspace:switch',
+  WORKSPACE_GET_ACTIVE: 'workspace:get-active',
+  WORKSPACE_SWITCHED: 'workspace:switched',
   SETTINGS_GET: 'settings:get',
   SETTINGS_SAVE_LAST_VIEW: 'settings:save-last-view',
 } as const;
@@ -76,6 +83,21 @@ const electronAPI = {
     const handler = () => callback();
     ipcRenderer.on(IPC.MENU_IMPORT_FILES, handler);
     return () => ipcRenderer.removeListener(IPC.MENU_IMPORT_FILES, handler);
+  },
+
+  // Workspaces
+  listWorkspaces: () => ipcRenderer.invoke(IPC.WORKSPACE_LIST),
+  addWorkspace: (name: string, libraryPath: string) =>
+    ipcRenderer.invoke(IPC.WORKSPACE_ADD, name, libraryPath),
+  renameWorkspace: (id: string, name: string) =>
+    ipcRenderer.invoke(IPC.WORKSPACE_RENAME, id, name),
+  removeWorkspace: (id: string) => ipcRenderer.invoke(IPC.WORKSPACE_REMOVE, id),
+  switchWorkspace: (id: string) => ipcRenderer.invoke(IPC.WORKSPACE_SWITCH, id),
+  getActiveWorkspaceId: () => ipcRenderer.invoke(IPC.WORKSPACE_GET_ACTIVE),
+  onWorkspaceSwitched: (callback: (workspaceId: string) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, id: string) => callback(id);
+    ipcRenderer.on(IPC.WORKSPACE_SWITCHED, handler);
+    return () => ipcRenderer.removeListener(IPC.WORKSPACE_SWITCHED, handler);
   },
 
   // Settings

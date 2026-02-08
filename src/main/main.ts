@@ -8,10 +8,11 @@ import { PdfExtractor } from './services/pdf-extractor';
 import { WatcherService } from './services/watcher-service';
 import { IPC_CHANNELS } from './ipc-channels';
 import { registerIpcHandlers } from './ipc-handlers';
-import { loadSettings, updateSettings } from './lib/settings';
+import { loadSettings, updateSettings, getActiveWorkspace, updateWorkspace } from './lib/settings';
 import { validateLibrary } from './lib/library-manager';
 import { mainLog } from './lib/logger';
 import { buildAppMenu } from './menu';
+import type { Workspace } from '../shared/types';
 
 app.name = 'File Harbor';
 
@@ -27,17 +28,20 @@ const appState: {
   libraryPath: string | null;
   pdfExtractor: PdfExtractor | null;
   watcher: WatcherService | null;
+  activeWorkspaceId: string | null;
 } = {
   db: null,
   libraryPath: null,
   pdfExtractor: null,
   watcher: null,
+  activeWorkspaceId: null,
 };
 
-function initializeLibraryServices(libraryPath: string): void {
+function initializeLibraryServices(workspace: Workspace): void {
   try {
-    appState.libraryPath = libraryPath;
-    appState.db = new DatabaseService(libraryPath);
+    appState.libraryPath = workspace.libraryPath;
+    appState.activeWorkspaceId = workspace.id;
+    appState.db = new DatabaseService(workspace.libraryPath);
     appState.pdfExtractor = new PdfExtractor(appState.db);
     appState.watcher = new WatcherService(
       appState,
@@ -48,27 +52,61 @@ function initializeLibraryServices(libraryPath: string): void {
       },
       (errorMessage) => {
         mainLog.warn(`Watcher error: ${errorMessage}`);
-        updateSettings({ watchedFolderPath: undefined });
+        if (appState.activeWorkspaceId) {
+          updateWorkspace(appState.activeWorkspaceId, { watchedFolderPath: undefined });
+        }
         BrowserWindow.getAllWindows().forEach((w) => {
           w.webContents.send(IPC_CHANNELS.WATCHER_ERROR, errorMessage);
         });
       }
     );
 
-    // Restore watched folder if previously configured
-    const settings = loadSettings();
-    if (settings.watchedFolderPath) {
-      appState.watcher.start(settings.watchedFolderPath);
+    // Restore watched folder from workspace config
+    if (workspace.watchedFolderPath) {
+      appState.watcher.start(workspace.watchedFolderPath);
     }
 
-    mainLog.info(`Library opened at ${libraryPath}`);
+    mainLog.info(`Library opened at ${workspace.libraryPath} (workspace: ${workspace.name})`);
   } catch (err) {
     mainLog.error('Failed to initialize library services:', err);
     appState.db = null;
     appState.libraryPath = null;
     appState.pdfExtractor = null;
     appState.watcher = null;
+    appState.activeWorkspaceId = null;
   }
+}
+
+async function teardownLibraryServices(): Promise<void> {
+  if (appState.watcher) {
+    await appState.watcher.stop();
+  }
+  if (appState.pdfExtractor) {
+    await appState.pdfExtractor.shutdown();
+  }
+  if (appState.db) {
+    appState.db.close();
+  }
+  appState.db = null;
+  appState.libraryPath = null;
+  appState.pdfExtractor = null;
+  appState.watcher = null;
+  appState.activeWorkspaceId = null;
+}
+
+async function switchWorkspace(workspaceId: string): Promise<boolean> {
+  const settings = loadSettings();
+  const workspace = settings.workspaces.find((w) => w.id === workspaceId);
+  if (!workspace) return false;
+
+  if (!validateLibrary(workspace.libraryPath)) return false;
+
+  await teardownLibraryServices();
+  initializeLibraryServices(workspace);
+
+  updateSettings({ activeWorkspaceId: workspaceId, lastView: 'inbox' });
+
+  return true;
 }
 
 // ── Window ──────────────────────────────────────────────────────
@@ -132,10 +170,11 @@ protocol.registerSchemesAsPrivileged([
 app.on('ready', () => {
   // Load saved settings and try to open existing library
   const settings = loadSettings();
-  if (settings.libraryPath && validateLibrary(settings.libraryPath)) {
-    initializeLibraryServices(settings.libraryPath);
+  const activeWorkspace = getActiveWorkspace(settings);
+  if (activeWorkspace && validateLibrary(activeWorkspace.libraryPath)) {
+    initializeLibraryServices(activeWorkspace);
   } else {
-    mainLog.info('No valid library found — waiting for user to configure one');
+    mainLog.info('No valid workspace found — waiting for user to configure one');
   }
 
   // Register custom protocol handler for serving library files
@@ -166,7 +205,11 @@ app.on('ready', () => {
   buildAppMenu(() => appState.libraryPath);
 
   // Register all IPC handlers
-  registerIpcHandlers(appState, initializeLibraryServices);
+  registerIpcHandlers(appState, {
+    initializeServices: initializeLibraryServices,
+    teardownServices: teardownLibraryServices,
+    switchWorkspace,
+  });
 
   createWindow();
 });
@@ -196,13 +239,5 @@ process.on('unhandledRejection', (reason) => {
 // Graceful shutdown
 app.on('before-quit', async () => {
   mainLog.info('Shutting down...');
-  if (appState.watcher) {
-    await appState.watcher.stop();
-  }
-  if (appState.pdfExtractor) {
-    await appState.pdfExtractor.shutdown();
-  }
-  if (appState.db) {
-    appState.db.close();
-  }
+  await teardownLibraryServices();
 });

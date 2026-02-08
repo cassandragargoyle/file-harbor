@@ -4,7 +4,7 @@ A personal document filing cabinet for your desktop. File Harbor is a local-firs
 
 ## Overview
 
-File Harbor works like a digital filing cabinet. When you first launch the app you choose a library folder on disk. From there you can import documents by dragging them onto the window, using the file picker, or pointing the app at a watched folder for automatic import. Every document lands in your **Inbox** where you can preview it and file it into one of 12 built-in categories:
+File Harbor works like a digital filing cabinet. When you first launch the app you choose a library folder on disk — this becomes your first **workspace**. You can create additional workspaces to keep different areas of your life separate (e.g. Personal, Work, Side Business). From any workspace you can import documents by dragging them onto the window, using the file picker, or pointing the app at a watched folder for automatic import. Every document lands in your **Inbox** where you can preview it and file it into one of 12 built-in categories:
 
 **Identity** | **Taxes** | **Banking** | **Insurance** | **Medical** | **Home** | **Work** | **Kids** | **Receipts** | **Legal** | **Utilities** | **Other**
 
@@ -19,6 +19,7 @@ PDF text is automatically extracted in the background, making your documents sea
 - **In-app preview** — view PDFs, images, and text files without leaving the app
 - **Export and reveal** — export documents back out or reveal them in Finder/Explorer
 - **Category filing** — organize documents into 12 practical life categories
+- **Multiple workspaces** — keep separate libraries for personal, work, and other contexts; switch between them from the sidebar
 - **Local-first** — no accounts, no cloud sync, no telemetry; your data stays on your machine
 
 ### Supported File Types
@@ -102,7 +103,7 @@ src/
 ├── renderer/                # React UI
 │   ├── components/
 │   │   ├── onboarding/      # Welcome screen & library setup
-│   │   ├── layout/          # Sidebar, TopBar, MainContent
+│   │   ├── layout/          # Sidebar, TopBar, MainContent, WorkspaceSwitcher
 │   │   ├── inbox/           # DropZone overlay
 │   │   ├── documents/       # DocumentList, DocumentRow, Preview, ContextMenu
 │   │   ├── filing/          # CategoryPicker
@@ -235,9 +236,19 @@ This design ensures:
 - **No duplicates** — the SHA-256 hash is checked before committing the file
 - **Non-blocking extraction** — PDF text parsing runs in a separate Worker thread so the UI stays responsive
 
+### Workspaces
+
+File Harbor supports multiple workspaces. Each workspace is an independent library folder with its own `db.sqlite`, `objects/` directory, and optional watched folder. One workspace is active at a time.
+
+On first launch, a **Default** workspace is created automatically. You can add more workspaces from the dropdown in the sidebar, and switch between them at any time. Switching workspaces tears down the current database and services, then reinitializes with the selected workspace's library folder.
+
+Workspace configuration (names, paths, active selection) is stored in `settings.json` in Electron's `userData` directory. Existing users upgrading from the single-library format are automatically migrated — their library becomes a "Default" workspace with no action required.
+
+Removing a workspace only removes it from the list — the library folder and its files are never deleted.
+
 ### Watched Folder
 
-The optional watched folder uses chokidar with these settings:
+Each workspace can have its own watched folder. The watched folder uses chokidar with these settings:
 
 - Only watches the top-level directory (no subdirectories)
 - Ignores dotfiles, `.DS_Store`, Office temp files (`~$`), `.tmp`, `.crdownload`, and `.part` files

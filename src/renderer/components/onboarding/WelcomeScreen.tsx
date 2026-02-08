@@ -1,14 +1,10 @@
 import { useState } from 'react';
 import { FolderOpen, Archive } from 'lucide-react';
 import * as ipc from '../../lib/ipc';
-import { useAppStore } from '../../stores/app-store';
 
 export function WelcomeScreen({ onComplete }: { onComplete: () => void }) {
   const [isInitializing, setIsInitializing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const setLibraryPath = useAppStore((s) => s.setLibraryPath);
-  const loadDocuments = useAppStore((s) => s.loadDocuments);
-  const refreshCounts = useAppStore((s) => s.refreshCounts);
 
   const handleChooseLibrary = async () => {
     setError(null);
@@ -19,9 +15,6 @@ export function WelcomeScreen({ onComplete }: { onComplete: () => void }) {
     try {
       const result = await ipc.initializeLibrary(path);
       if (result.success) {
-        setLibraryPath(path);
-        await loadDocuments();
-        await refreshCounts();
         onComplete();
       } else {
         setError(result.error || 'Failed to initialize library');

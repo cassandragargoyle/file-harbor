@@ -7,6 +7,7 @@ import type { LibraryInfo } from '../../../shared/types';
 
 export function SettingsDialog({ onClose }: { onClose: () => void }) {
   const libraryPath = useAppStore((s) => s.libraryPath);
+  const activeWorkspaceName = useAppStore((s) => s.activeWorkspaceName);
   const [watchedFolder, setWatchedFolder] = useState<string | null>(null);
   const [libraryInfo, setLibraryInfo] = useState<LibraryInfo | null>(null);
 
@@ -42,6 +43,10 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
         <section className="mb-6">
           <h3 className="mb-3 text-sm font-medium text-muted">Library</h3>
           <div className="space-y-3 rounded-lg border border-border bg-surface/50 p-4">
+            <div>
+              <p className="text-xs text-faint">Workspace</p>
+              <p className="mt-0.5 text-sm text-secondary">{activeWorkspaceName ?? 'Default'}</p>
+            </div>
             <div>
               <p className="text-xs text-faint">Location</p>
               <p className="mt-0.5 truncate text-sm text-secondary">{libraryPath ?? 'Not set'}</p>

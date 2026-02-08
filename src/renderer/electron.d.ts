@@ -1,4 +1,4 @@
-import type { DocumentRecord, Category, DocumentSource, IngestResult, LibraryInfo, DocumentCounts } from '../shared/types';
+import type { DocumentRecord, Category, DocumentSource, IngestResult, LibraryInfo, DocumentCounts, Workspace } from '../shared/types';
 
 interface ElectronAPI {
   // Library
@@ -34,10 +34,20 @@ interface ElectronAPI {
   // Menu events
   onMenuImportFiles: (callback: () => void) => () => void;
 
+  // Workspaces
+  listWorkspaces: () => Promise<Workspace[]>;
+  addWorkspace: (name: string, libraryPath: string) => Promise<{ success: boolean; workspace?: Workspace; error?: string }>;
+  renameWorkspace: (id: string, name: string) => Promise<boolean>;
+  removeWorkspace: (id: string) => Promise<{ success: boolean; error?: string }>;
+  switchWorkspace: (id: string) => Promise<{ success: boolean }>;
+  getActiveWorkspaceId: () => Promise<string | null>;
+  onWorkspaceSwitched: (callback: (workspaceId: string) => void) => () => void;
+
   // Settings
   getSettings: () => Promise<{
-    libraryPath?: string;
-    watchedFolderPath?: string;
+    version: 2;
+    workspaces: Workspace[];
+    activeWorkspaceId: string;
     windowBounds?: { x: number; y: number; width: number; height: number };
     lastView?: string;
   }>;

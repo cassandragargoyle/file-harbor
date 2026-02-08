@@ -17,6 +17,7 @@ import type { Category } from '../../../shared/types';
 import { CATEGORIES } from '../../../shared/constants';
 import { useAppStore, type ViewType } from '../../stores/app-store';
 import { cn } from '../../lib/utils';
+import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 
 const CATEGORY_ICONS: Record<Category, React.ComponentType<{ className?: string }>> = {
   Identity: UserRound,
@@ -42,6 +43,8 @@ export function Sidebar() {
   return (
     <aside className="flex h-full w-60 shrink-0 flex-col border-r border-border bg-surface/50">
       <div className="h-10 shrink-0 [-webkit-app-region:drag]" />
+
+      <WorkspaceSwitcher />
 
       <nav className="flex-1 overflow-y-auto px-2 pb-2">
         <SidebarItem
