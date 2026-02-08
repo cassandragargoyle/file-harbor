@@ -11,6 +11,7 @@ interface AppSettings {
     width: number;
     height: number;
   };
+  lastView?: string;
 }
 
 const settingsPath = path.join(app.getPath('userData'), 'settings.json');

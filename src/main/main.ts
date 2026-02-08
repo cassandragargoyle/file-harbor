@@ -8,9 +8,12 @@ import { PdfExtractor } from './services/pdf-extractor';
 import { WatcherService } from './services/watcher-service';
 import { IPC_CHANNELS } from './ipc-channels';
 import { registerIpcHandlers } from './ipc-handlers';
-import { loadSettings } from './lib/settings';
+import { loadSettings, updateSettings } from './lib/settings';
 import { validateLibrary } from './lib/library-manager';
 import { mainLog } from './lib/logger';
+import { buildAppMenu } from './menu';
+
+app.name = 'File Harbor';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -36,11 +39,21 @@ function initializeLibraryServices(libraryPath: string): void {
     appState.libraryPath = libraryPath;
     appState.db = new DatabaseService(libraryPath);
     appState.pdfExtractor = new PdfExtractor(appState.db);
-    appState.watcher = new WatcherService(appState, (doc) => {
-      BrowserWindow.getAllWindows().forEach((w) => {
-        w.webContents.send(IPC_CHANNELS.WATCHER_FILE_INGESTED, doc);
-      });
-    });
+    appState.watcher = new WatcherService(
+      appState,
+      (doc) => {
+        BrowserWindow.getAllWindows().forEach((w) => {
+          w.webContents.send(IPC_CHANNELS.WATCHER_FILE_INGESTED, doc);
+        });
+      },
+      (errorMessage) => {
+        mainLog.warn(`Watcher error: ${errorMessage}`);
+        updateSettings({ watchedFolderPath: undefined });
+        BrowserWindow.getAllWindows().forEach((w) => {
+          w.webContents.send(IPC_CHANNELS.WATCHER_ERROR, errorMessage);
+        });
+      }
+    );
 
     // Restore watched folder if previously configured
     const settings = loadSettings();
@@ -61,9 +74,14 @@ function initializeLibraryServices(libraryPath: string): void {
 // ── Window ──────────────────────────────────────────────────────
 
 const createWindow = () => {
+  const settings = loadSettings();
+  const bounds = settings.windowBounds;
+
   const mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
+    width: bounds?.width ?? 1200,
+    height: bounds?.height ?? 800,
+    x: bounds?.x,
+    y: bounds?.y,
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -71,6 +89,20 @@ const createWindow = () => {
       nodeIntegration: false,
     },
   });
+
+  // Persist window bounds on move/resize (debounced)
+  let boundsTimer: ReturnType<typeof setTimeout> | null = null;
+  const saveBounds = () => {
+    if (boundsTimer) clearTimeout(boundsTimer);
+    boundsTimer = setTimeout(() => {
+      if (!mainWindow.isDestroyed()) {
+        const b = mainWindow.getBounds();
+        updateSettings({ windowBounds: b });
+      }
+    }, 500);
+  };
+  mainWindow.on('resize', saveBounds);
+  mainWindow.on('move', saveBounds);
 
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
@@ -130,6 +162,9 @@ app.on('ready', () => {
     return net.fetch(pathToFileURL(resolved).toString());
   });
 
+  // Build application menu
+  buildAppMenu(() => appState.libraryPath);
+
   // Register all IPC handlers
   registerIpcHandlers(appState, initializeLibraryServices);
 
@@ -146,6 +181,16 @@ app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
   }
+});
+
+// ── Global Error Handlers ────────────────────────────────────────
+
+process.on('uncaughtException', (err) => {
+  mainLog.error('Uncaught exception:', err);
+});
+
+process.on('unhandledRejection', (reason) => {
+  mainLog.error('Unhandled rejection:', reason);
 });
 
 // Graceful shutdown

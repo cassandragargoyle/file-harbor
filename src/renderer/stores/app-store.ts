@@ -58,6 +58,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   setCurrentView: async (view) => {
     set({ currentView: view, selectedDocumentId: null, previewDocumentId: null, searchQuery: '', isSearching: false });
+    ipc.saveLastView(view); // fire-and-forget
     await get().loadDocuments();
   },
 
@@ -119,7 +120,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   initialize: async () => {
     const settings = await ipc.getSettings();
     if (settings.libraryPath) {
-      set({ libraryPath: settings.libraryPath });
+      const lastView = settings.lastView as ViewType | undefined;
+      set({
+        libraryPath: settings.libraryPath,
+        currentView: lastView ?? 'inbox',
+      });
       await get().loadDocuments();
       await get().refreshCounts();
       return 'ready';

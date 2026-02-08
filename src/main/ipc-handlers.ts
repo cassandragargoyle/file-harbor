@@ -364,4 +364,12 @@ export function registerIpcHandlers(
       return {};
     }
   });
+
+  ipcMain.handle(IPC_CHANNELS.SETTINGS_SAVE_LAST_VIEW, (_event, view: string) => {
+    try {
+      updateSettings({ lastView: view });
+    } catch (err) {
+      ipcLog.error('SETTINGS_SAVE_LAST_VIEW failed:', err);
+    }
+  });
 }

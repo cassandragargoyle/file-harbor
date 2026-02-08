@@ -15,6 +15,7 @@ export function DocumentList({ onContextMenu, onDoubleClick, onFile }: DocumentL
   const isLoading = useAppStore((s) => s.isLoading);
   const currentView = useAppStore((s) => s.currentView);
   const isSearching = useAppStore((s) => s.isSearching);
+  const searchQuery = useAppStore((s) => s.searchQuery);
 
   // Keyboard navigation
   const handleKeyDown = useCallback(
@@ -54,7 +55,7 @@ export function DocumentList({ onContextMenu, onDoubleClick, onFile }: DocumentL
   }
 
   if (documents.length === 0) {
-    return <EmptyState view={isSearching ? 'search' : currentView} />;
+    return <EmptyState view={isSearching ? 'search' : currentView} searchQuery={searchQuery} />;
   }
 
   return (
@@ -74,14 +75,16 @@ export function DocumentList({ onContextMenu, onDoubleClick, onFile }: DocumentL
   );
 }
 
-function EmptyState({ view }: { view: ViewType | 'search' }) {
+function EmptyState({ view, searchQuery }: { view: ViewType | 'search'; searchQuery?: string }) {
   let message: string;
   if (view === 'search') {
-    message = 'No documents match your search.';
+    message = searchQuery
+      ? `No documents match '${searchQuery}'.`
+      : 'No documents match your search.';
   } else if (view === 'inbox') {
-    message = 'Your inbox is empty. Drag and drop files or use Import to get started.';
+    message = 'All caught up! Drag files here or import to get started.';
   } else {
-    message = `No documents filed under ${view} yet.`;
+    message = `No documents filed under ${view}.`;
   }
 
   return (

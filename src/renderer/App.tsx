@@ -42,19 +42,6 @@ export default function App() {
     return () => { cancelled = true; };
   }, []);
 
-  // Subscribe to watcher events for real-time UI updates
-  useEffect(() => {
-    if (phase !== 'ready') return;
-
-    const cleanup = ipc.onFileIngested((doc) => {
-      toast.success(`New file imported: ${doc.original_filename}`);
-      loadDocuments();
-      refreshCounts();
-    });
-
-    return cleanup;
-  }, [phase, loadDocuments, refreshCounts]);
-
   // ── Action callbacks ──────────────────────────────────────
   const handleFileAction = useCallback((docId?: string) => {
     const id = docId ?? selectedDocumentId;
@@ -83,6 +70,31 @@ export default function App() {
       toast.error('Failed to import files');
     }
   }, [loadDocuments, refreshCounts]);
+
+  // Subscribe to watcher and menu events
+  useEffect(() => {
+    if (phase !== 'ready') return;
+
+    const cleanupWatcher = ipc.onFileIngested((doc) => {
+      toast.success(`New file imported: ${doc.original_filename}`);
+      loadDocuments();
+      refreshCounts();
+    });
+
+    const cleanupMenu = ipc.onMenuImportFiles(() => {
+      handleImportAction();
+    });
+
+    const cleanupWatcherError = ipc.onWatcherError((message) => {
+      toast.error(message);
+    });
+
+    return () => {
+      cleanupWatcher();
+      cleanupMenu();
+      cleanupWatcherError();
+    };
+  }, [phase, loadDocuments, refreshCounts, handleImportAction]);
 
   const handleCategorySelect = useCallback(async (category: Category | null) => {
     if (!categoryPickerDocId) return;

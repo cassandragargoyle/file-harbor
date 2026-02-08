@@ -26,16 +26,22 @@ interface ElectronAPI {
   getWatchedFolder: () => Promise<string | null>;
   clearWatchedFolder: () => Promise<void>;
   onFileIngested: (callback: (doc: DocumentRecord) => void) => () => void;
+  onWatcherError: (callback: (message: string) => void) => () => void;
 
   // Utility
   getPathForFile: (file: File) => string;
+
+  // Menu events
+  onMenuImportFiles: (callback: () => void) => () => void;
 
   // Settings
   getSettings: () => Promise<{
     libraryPath?: string;
     watchedFolderPath?: string;
     windowBounds?: { x: number; y: number; width: number; height: number };
+    lastView?: string;
   }>;
+  saveLastView: (view: string) => Promise<void>;
 }
 
 declare global {

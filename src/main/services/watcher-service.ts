@@ -34,7 +34,8 @@ export class WatcherService {
 
   constructor(
     private state: AppState,
-    private onFileIngested: (doc: DocumentRecord) => void
+    private onFileIngested: (doc: DocumentRecord) => void,
+    private onError?: (message: string) => void
   ) {}
 
   async start(folderPath: string): Promise<void> {
@@ -51,7 +52,14 @@ export class WatcherService {
     });
 
     this.watcher.on('add', (filePath) => this.handleNewFile(filePath));
-    this.watcher.on('error', (err) => watcherLog.error('Watcher error:', err));
+    this.watcher.on('error', (err) => {
+      watcherLog.error('Watcher error:', err);
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes('ENOENT') || msg.includes('no such file')) {
+        this.onError?.(`Watched folder no longer exists: ${folderPath}`);
+        this.stop();
+      }
+    });
 
     watcherLog.info(`Watching folder: ${folderPath}`);
   }

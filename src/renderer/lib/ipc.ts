@@ -40,9 +40,14 @@ export const setWatchedFolder = () => api.setWatchedFolder();
 export const getWatchedFolder = (): Promise<string | null> => api.getWatchedFolder();
 export const clearWatchedFolder = () => api.clearWatchedFolder();
 export const onFileIngested = (cb: (doc: DocumentRecord) => void) => api.onFileIngested(cb);
+export const onWatcherError = (cb: (message: string) => void) => api.onWatcherError(cb);
 
 // Utility
 export const getPathForFile = (file: File): string => api.getPathForFile(file);
 
+// Menu events
+export const onMenuImportFiles = (cb: () => void) => api.onMenuImportFiles(cb);
+
 // Settings
 export const getSettings = () => api.getSettings();
+export const saveLastView = (view: string) => api.saveLastView(view);

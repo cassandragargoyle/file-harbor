@@ -21,7 +21,10 @@ const IPC = {
   WATCHER_GET_FOLDER: 'watcher:get-folder',
   WATCHER_CLEAR_FOLDER: 'watcher:clear-folder',
   WATCHER_FILE_INGESTED: 'watcher:file-ingested',
+  WATCHER_ERROR: 'watcher:error',
+  MENU_IMPORT_FILES: 'menu:import-files',
   SETTINGS_GET: 'settings:get',
+  SETTINGS_SAVE_LAST_VIEW: 'settings:save-last-view',
 } as const;
 
 const electronAPI = {
@@ -59,12 +62,25 @@ const electronAPI = {
     ipcRenderer.on(IPC.WATCHER_FILE_INGESTED, handler);
     return () => ipcRenderer.removeListener(IPC.WATCHER_FILE_INGESTED, handler);
   },
+  onWatcherError: (callback: (message: string) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, message: string) => callback(message);
+    ipcRenderer.on(IPC.WATCHER_ERROR, handler);
+    return () => ipcRenderer.removeListener(IPC.WATCHER_ERROR, handler);
+  },
 
   // Utility
   getPathForFile: (file: File) => webUtils.getPathForFile(file),
 
+  // Menu events
+  onMenuImportFiles: (callback: () => void) => {
+    const handler = () => callback();
+    ipcRenderer.on(IPC.MENU_IMPORT_FILES, handler);
+    return () => ipcRenderer.removeListener(IPC.MENU_IMPORT_FILES, handler);
+  },
+
   // Settings
   getSettings: () => ipcRenderer.invoke(IPC.SETTINGS_GET),
+  saveLastView: (view: string) => ipcRenderer.invoke(IPC.SETTINGS_SAVE_LAST_VIEW, view),
 };
 
 contextBridge.exposeInMainWorld('electronAPI', electronAPI);

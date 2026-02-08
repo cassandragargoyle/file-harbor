@@ -24,9 +24,14 @@ export const IPC_CHANNELS = {
   WATCHER_GET_FOLDER: 'watcher:get-folder',
   WATCHER_CLEAR_FOLDER: 'watcher:clear-folder',
   WATCHER_FILE_INGESTED: 'watcher:file-ingested',
+  WATCHER_ERROR: 'watcher:error',
+
+  // Menu events (main -> renderer)
+  MENU_IMPORT_FILES: 'menu:import-files',
 
   // Settings
   SETTINGS_GET: 'settings:get',
+  SETTINGS_SAVE_LAST_VIEW: 'settings:save-last-view',
 } as const;
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];
