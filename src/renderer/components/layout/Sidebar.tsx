@@ -40,7 +40,7 @@ export function Sidebar() {
   const inboxCount = sidebarCounts?.inbox ?? 0;
 
   return (
-    <aside className="flex h-full w-60 shrink-0 flex-col border-r border-neutral-800 bg-neutral-900/50">
+    <aside className="flex h-full w-60 shrink-0 flex-col border-r border-border bg-surface/50">
       <div className="h-10 shrink-0 [-webkit-app-region:drag]" />
 
       <nav className="flex-1 overflow-y-auto px-2 pb-2">
@@ -53,7 +53,7 @@ export function Sidebar() {
           highlight={inboxCount > 0}
         />
 
-        <div className="mx-2 my-2 border-t border-neutral-800" />
+        <div className="mx-2 my-2 border-t border-border" />
 
         {CATEGORIES.map((cat) => {
           const Icon = CATEGORY_ICONS[cat];
@@ -95,8 +95,8 @@ function SidebarItem({
       className={cn(
         'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
         active
-          ? 'bg-neutral-800 text-neutral-100'
-          : 'text-neutral-400 hover:bg-neutral-800/50 hover:text-neutral-200'
+          ? 'bg-elevated text-foreground'
+          : 'text-muted hover:bg-elevated/50 hover:text-secondary'
       )}
     >
       <Icon className="h-4 w-4 shrink-0" />
@@ -106,8 +106,8 @@ function SidebarItem({
           className={cn(
             'text-xs tabular-nums',
             highlight && !active
-              ? 'rounded-full bg-blue-600/20 px-1.5 py-0.5 text-blue-400'
-              : 'text-neutral-500'
+              ? 'rounded-full bg-accent/20 px-1.5 py-0.5 text-accent-fg'
+              : 'text-faint'
           )}
         >
           {count}

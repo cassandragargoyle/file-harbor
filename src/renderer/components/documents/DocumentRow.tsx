@@ -25,19 +25,19 @@ export function DocumentRow({
       onClick={onClick}
       data-document-id={document.id}
       className={cn(
-        'flex w-full items-center gap-3 border-b border-neutral-800/50 px-4 py-3 text-left transition-colors',
-        selected ? 'bg-neutral-800' : 'hover:bg-neutral-800/30'
+        'flex w-full items-center gap-3 border-b border-border/50 px-4 py-3 text-left transition-colors',
+        selected ? 'bg-elevated' : 'hover:bg-elevated/30'
       )}
     >
-      <Icon className="h-5 w-5 shrink-0 text-neutral-500" />
+      <Icon className="h-5 w-5 shrink-0 text-faint" />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-neutral-200">
+        <p className="truncate text-sm font-medium text-secondary">
           {document.original_filename}
         </p>
-        <p className="mt-0.5 text-xs text-neutral-500">
+        <p className="mt-0.5 text-xs text-faint">
           {relativeTime(document.added_at)}
           {document.category && (
-            <span className="ml-2 text-neutral-600">&middot; {document.category}</span>
+            <span className="ml-2 text-dim">&middot; {document.category}</span>
           )}
         </p>
       </div>

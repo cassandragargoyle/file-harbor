@@ -18,23 +18,23 @@ export function MainContent() {
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      <div className="flex h-11 shrink-0 items-center justify-between border-b border-neutral-800 px-4">
+      <div className="flex h-11 shrink-0 items-center justify-between border-b border-border px-4">
         <div className="flex items-center gap-3">
-          <h2 className="text-sm font-semibold text-neutral-100">{viewTitle}</h2>
-          <span className="text-xs text-neutral-500 tabular-nums">
+          <h2 className="text-sm font-semibold text-foreground">{viewTitle}</h2>
+          <span className="text-xs tabular-nums text-faint">
             {documents.length} {documents.length === 1 ? 'document' : 'documents'}
           </span>
         </div>
 
         {!isSearching && (
-          <div className="flex gap-0.5 rounded-md bg-neutral-900 p-0.5 text-xs">
+          <div className="flex gap-0.5 rounded-md bg-surface p-0.5 text-xs">
             <button
               onClick={() => setSortBy('date')}
               className={cn(
                 'rounded px-2 py-1 transition-colors',
                 sortBy === 'date'
-                  ? 'bg-neutral-800 text-neutral-100'
-                  : 'text-neutral-500 hover:text-neutral-300'
+                  ? 'bg-elevated text-foreground'
+                  : 'text-faint hover:text-secondary'
               )}
             >
               Date
@@ -44,8 +44,8 @@ export function MainContent() {
               className={cn(
                 'rounded px-2 py-1 transition-colors',
                 sortBy === 'name'
-                  ? 'bg-neutral-800 text-neutral-100'
-                  : 'text-neutral-500 hover:text-neutral-300'
+                  ? 'bg-elevated text-foreground'
+                  : 'text-faint hover:text-secondary'
               )}
             >
               Name

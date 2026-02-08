@@ -21,8 +21,8 @@ export default function App() {
 
   if (phase === 'loading') {
     return (
-      <div className="flex h-screen items-center justify-center bg-neutral-950 text-neutral-100 [-webkit-app-region:drag]">
-        <p className="text-sm text-neutral-500">Loading...</p>
+      <div className="flex h-screen items-center justify-center bg-base text-foreground [-webkit-app-region:drag]">
+        <p className="text-sm text-faint">Loading...</p>
       </div>
     );
   }
@@ -32,7 +32,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen bg-neutral-950 text-neutral-100">
+    <div className="flex h-screen bg-base text-foreground">
       <Sidebar />
       <div className="flex flex-1 flex-col overflow-hidden">
         <TopBar />

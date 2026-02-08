@@ -15,8 +15,6 @@ export function DocumentList() {
     (e: KeyboardEvent) => {
       if (documents.length === 0) return;
       if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
-
-      // Don't hijack when typing in an input
       if ((e.target as HTMLElement).tagName === 'INPUT') return;
 
       e.preventDefault();
@@ -79,7 +77,7 @@ function EmptyState({ view }: { view: ViewType | 'search' }) {
 
   return (
     <div className="flex flex-1 items-center justify-center p-8">
-      <p className="text-center text-sm text-neutral-500">{message}</p>
+      <p className="text-center text-sm text-faint">{message}</p>
     </div>
   );
 }
@@ -89,10 +87,10 @@ function LoadingSkeleton() {
     <div className="flex-1 space-y-3 px-4 py-3">
       {Array.from({ length: 5 }).map((_, i) => (
         <div key={i} className="flex animate-pulse items-center gap-3">
-          <div className="h-5 w-5 rounded bg-neutral-800" />
+          <div className="h-5 w-5 rounded bg-elevated" />
           <div className="flex-1 space-y-2">
-            <div className="h-3.5 w-2/3 rounded bg-neutral-800" />
-            <div className="h-3 w-1/3 rounded bg-neutral-800" />
+            <div className="h-3.5 w-2/3 rounded bg-elevated" />
+            <div className="h-3 w-1/3 rounded bg-elevated" />
           </div>
         </div>
       ))}

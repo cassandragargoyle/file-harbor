@@ -34,14 +34,14 @@ export function WelcomeScreen({ onComplete }: { onComplete: () => void }) {
   };
 
   return (
-    <div className="flex h-screen items-center justify-center bg-neutral-950 text-neutral-100 [-webkit-app-region:drag]">
+    <div className="flex h-screen items-center justify-center bg-base text-foreground [-webkit-app-region:drag]">
       <div className="flex max-w-md flex-col items-center text-center [-webkit-app-region:no-drag]">
-        <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-neutral-800">
-          <Archive className="h-8 w-8 text-blue-400" />
+        <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-elevated">
+          <Archive className="h-8 w-8 text-accent-fg" />
         </div>
 
         <h1 className="text-3xl font-bold tracking-tight">Welcome to File Harbor</h1>
-        <p className="mt-3 leading-relaxed text-neutral-400">
+        <p className="mt-3 leading-relaxed text-muted">
           Your personal document cabinet. Choose a folder to store your
           library — all your documents and metadata will live there.
         </p>
@@ -49,13 +49,13 @@ export function WelcomeScreen({ onComplete }: { onComplete: () => void }) {
         <button
           onClick={handleChooseLibrary}
           disabled={isInitializing}
-          className="mt-8 flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 font-medium text-white transition-colors hover:bg-blue-500 disabled:opacity-50"
+          className="mt-8 flex items-center gap-2 rounded-lg bg-accent px-6 py-3 font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
         >
           <FolderOpen className="h-4 w-4" />
           {isInitializing ? 'Setting up...' : 'Choose Library Location'}
         </button>
 
-        {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
+        {error && <p className="mt-4 text-sm text-danger">{error}</p>}
       </div>
     </div>
   );
