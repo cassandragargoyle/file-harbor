@@ -28,7 +28,10 @@ interface AppState {
   pdfExtractor: PdfExtractor | null;
 }
 
-export function registerIpcHandlers(state: AppState): void {
+export function registerIpcHandlers(
+  state: AppState,
+  onLibraryInitialized: (libraryPath: string) => void
+): void {
   // ── Library ───────────────────────────────────────────────────
 
   ipcMain.handle(IPC_CHANNELS.LIBRARY_CHOOSE_PATH, async () => {
@@ -50,6 +53,7 @@ export function registerIpcHandlers(state: AppState): void {
     try {
       initializeLibrary(libraryPath);
       updateSettings({ libraryPath });
+      onLibraryInitialized(libraryPath);
       return { success: true, path: libraryPath };
     } catch (err) {
       ipcLog.error('LIBRARY_INITIALIZE failed:', err);

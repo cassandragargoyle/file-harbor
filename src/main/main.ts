@@ -75,7 +75,7 @@ app.on('ready', () => {
   }
 
   // Register all IPC handlers
-  registerIpcHandlers(appState);
+  registerIpcHandlers(appState, initializeLibraryServices);
 
   createWindow();
 });

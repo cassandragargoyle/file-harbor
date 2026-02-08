@@ -1,9 +1,42 @@
+import { useState, useEffect } from 'react';
+import { useAppStore } from './stores/app-store';
+import { WelcomeScreen } from './components/onboarding/WelcomeScreen';
+import { Sidebar } from './components/layout/Sidebar';
+import { TopBar } from './components/layout/TopBar';
+import { MainContent } from './components/layout/MainContent';
+
+type AppPhase = 'loading' | 'onboarding' | 'ready';
+
 export default function App() {
+  const [phase, setPhase] = useState<AppPhase>('loading');
+  const initialize = useAppStore((s) => s.initialize);
+
+  useEffect(() => {
+    let cancelled = false;
+    initialize().then((result) => {
+      if (!cancelled) setPhase(result);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  if (phase === 'loading') {
+    return (
+      <div className="flex h-screen items-center justify-center bg-neutral-950 text-neutral-100 [-webkit-app-region:drag]">
+        <p className="text-sm text-neutral-500">Loading...</p>
+      </div>
+    );
+  }
+
+  if (phase === 'onboarding') {
+    return <WelcomeScreen onComplete={() => setPhase('ready')} />;
+  }
+
   return (
-    <div className="flex h-screen items-center justify-center bg-neutral-950 text-neutral-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold tracking-tight">File Harbor</h1>
-        <p className="mt-2 text-neutral-400">Your personal document cabinet</p>
+    <div className="flex h-screen bg-neutral-950 text-neutral-100">
+      <Sidebar />
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <TopBar />
+        <MainContent />
       </div>
     </div>
   );
