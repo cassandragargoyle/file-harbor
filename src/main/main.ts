@@ -2,10 +2,45 @@ import { app, BrowserWindow } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 
+import { DatabaseService } from './services/database';
+import { PdfExtractor } from './services/pdf-extractor';
+import { registerIpcHandlers } from './ipc-handlers';
+import { loadSettings } from './lib/settings';
+import { validateLibrary } from './lib/library-manager';
+import { mainLog } from './lib/logger';
+
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
   app.quit();
 }
+
+// ── App State ───────────────────────────────────────────────────
+
+const appState: {
+  db: DatabaseService | null;
+  libraryPath: string | null;
+  pdfExtractor: PdfExtractor | null;
+} = {
+  db: null,
+  libraryPath: null,
+  pdfExtractor: null,
+};
+
+function initializeLibraryServices(libraryPath: string): void {
+  try {
+    appState.libraryPath = libraryPath;
+    appState.db = new DatabaseService(libraryPath);
+    appState.pdfExtractor = new PdfExtractor(appState.db);
+    mainLog.info(`Library opened at ${libraryPath}`);
+  } catch (err) {
+    mainLog.error('Failed to initialize library services:', err);
+    appState.db = null;
+    appState.libraryPath = null;
+    appState.pdfExtractor = null;
+  }
+}
+
+// ── Window ──────────────────────────────────────────────────────
 
 const createWindow = () => {
   const mainWindow = new BrowserWindow({
@@ -28,7 +63,22 @@ const createWindow = () => {
   }
 };
 
-app.on('ready', createWindow);
+// ── Lifecycle ───────────────────────────────────────────────────
+
+app.on('ready', () => {
+  // Load saved settings and try to open existing library
+  const settings = loadSettings();
+  if (settings.libraryPath && validateLibrary(settings.libraryPath)) {
+    initializeLibraryServices(settings.libraryPath);
+  } else {
+    mainLog.info('No valid library found — waiting for user to configure one');
+  }
+
+  // Register all IPC handlers
+  registerIpcHandlers(appState);
+
+  createWindow();
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
@@ -39,5 +89,16 @@ app.on('window-all-closed', () => {
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
+  }
+});
+
+// Graceful shutdown
+app.on('before-quit', async () => {
+  mainLog.info('Shutting down...');
+  if (appState.pdfExtractor) {
+    await appState.pdfExtractor.shutdown();
+  }
+  if (appState.db) {
+    appState.db.close();
   }
 });
