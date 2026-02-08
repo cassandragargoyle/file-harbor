@@ -17,12 +17,16 @@ interface ElectronAPI {
   exportDocument: (id: string) => Promise<boolean>;
   revealInFinder: (id: string) => Promise<void>;
   getDocumentCounts: () => Promise<DocumentCounts | null>;
+  openFilePicker: () => Promise<string[] | null>;
 
   // Watcher
   setWatchedFolder: () => Promise<string | null>;
   getWatchedFolder: () => Promise<string | null>;
   clearWatchedFolder: () => Promise<void>;
   onFileIngested: (callback: (doc: DocumentRecord) => void) => () => void;
+
+  // Utility
+  getPathForFile: (file: File) => string;
 
   // Settings
   getSettings: () => Promise<{

@@ -15,6 +15,7 @@ export const IPC_CHANNELS = {
   DOCUMENTS_EXPORT: 'documents:export',
   DOCUMENTS_REVEAL_IN_FINDER: 'documents:reveal-in-finder',
   DOCUMENTS_GET_COUNTS: 'documents:get-counts',
+  DOCUMENTS_OPEN_FILE_PICKER: 'documents:open-file-picker',
 
   // Watcher
   WATCHER_SET_FOLDER: 'watcher:set-folder',

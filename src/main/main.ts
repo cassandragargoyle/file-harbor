@@ -4,6 +4,8 @@ import started from 'electron-squirrel-startup';
 
 import { DatabaseService } from './services/database';
 import { PdfExtractor } from './services/pdf-extractor';
+import { WatcherService } from './services/watcher-service';
+import { IPC_CHANNELS } from './ipc-channels';
 import { registerIpcHandlers } from './ipc-handlers';
 import { loadSettings } from './lib/settings';
 import { validateLibrary } from './lib/library-manager';
@@ -20,10 +22,12 @@ const appState: {
   db: DatabaseService | null;
   libraryPath: string | null;
   pdfExtractor: PdfExtractor | null;
+  watcher: WatcherService | null;
 } = {
   db: null,
   libraryPath: null,
   pdfExtractor: null,
+  watcher: null,
 };
 
 function initializeLibraryServices(libraryPath: string): void {
@@ -31,12 +35,25 @@ function initializeLibraryServices(libraryPath: string): void {
     appState.libraryPath = libraryPath;
     appState.db = new DatabaseService(libraryPath);
     appState.pdfExtractor = new PdfExtractor(appState.db);
+    appState.watcher = new WatcherService(appState, (doc) => {
+      BrowserWindow.getAllWindows().forEach((w) => {
+        w.webContents.send(IPC_CHANNELS.WATCHER_FILE_INGESTED, doc);
+      });
+    });
+
+    // Restore watched folder if previously configured
+    const settings = loadSettings();
+    if (settings.watchedFolderPath) {
+      appState.watcher.start(settings.watchedFolderPath);
+    }
+
     mainLog.info(`Library opened at ${libraryPath}`);
   } catch (err) {
     mainLog.error('Failed to initialize library services:', err);
     appState.db = null;
     appState.libraryPath = null;
     appState.pdfExtractor = null;
+    appState.watcher = null;
   }
 }
 
@@ -95,6 +112,9 @@ app.on('activate', () => {
 // Graceful shutdown
 app.on('before-quit', async () => {
   mainLog.info('Shutting down...');
+  if (appState.watcher) {
+    await appState.watcher.stop();
+  }
   if (appState.pdfExtractor) {
     await appState.pdfExtractor.shutdown();
   }

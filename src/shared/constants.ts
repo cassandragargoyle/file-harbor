@@ -23,6 +23,7 @@ export const ACCEPTED_EXTENSIONS = [
   '.gif',
   '.webp',
   '.txt',
+  '.md',
   '.docx',
 ];
 
@@ -34,6 +35,7 @@ export const ACCEPTED_MIME_TYPES: Record<string, string> = {
   '.gif': 'image/gif',
   '.webp': 'image/webp',
   '.txt': 'text/plain',
+  '.md': 'text/markdown',
   '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 };
 

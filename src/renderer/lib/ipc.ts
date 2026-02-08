@@ -30,12 +30,16 @@ export const getDocumentFilePath = (id: string): Promise<string | null> =>
 export const exportDocument = (id: string): Promise<boolean> => api.exportDocument(id);
 export const revealInFinder = (id: string) => api.revealInFinder(id);
 export const getDocumentCounts = (): Promise<DocumentCounts | null> => api.getDocumentCounts();
+export const openFilePicker = (): Promise<string[] | null> => api.openFilePicker();
 
 // Watcher
 export const setWatchedFolder = () => api.setWatchedFolder();
 export const getWatchedFolder = (): Promise<string | null> => api.getWatchedFolder();
 export const clearWatchedFolder = () => api.clearWatchedFolder();
 export const onFileIngested = (cb: (doc: DocumentRecord) => void) => api.onFileIngested(cb);
+
+// Utility
+export const getPathForFile = (file: File): string => api.getPathForFile(file);
 
 // Settings
 export const getSettings = () => api.getSettings();

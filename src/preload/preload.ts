@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer, webUtils } from 'electron';
 
 const IPC = {
   LIBRARY_CHOOSE_PATH: 'library:choose-path',
@@ -14,6 +14,7 @@ const IPC = {
   DOCUMENTS_EXPORT: 'documents:export',
   DOCUMENTS_REVEAL_IN_FINDER: 'documents:reveal-in-finder',
   DOCUMENTS_GET_COUNTS: 'documents:get-counts',
+  DOCUMENTS_OPEN_FILE_PICKER: 'documents:open-file-picker',
   WATCHER_SET_FOLDER: 'watcher:set-folder',
   WATCHER_GET_FOLDER: 'watcher:get-folder',
   WATCHER_CLEAR_FOLDER: 'watcher:clear-folder',
@@ -41,6 +42,7 @@ const electronAPI = {
   exportDocument: (id: string) => ipcRenderer.invoke(IPC.DOCUMENTS_EXPORT, id),
   revealInFinder: (id: string) => ipcRenderer.invoke(IPC.DOCUMENTS_REVEAL_IN_FINDER, id),
   getDocumentCounts: () => ipcRenderer.invoke(IPC.DOCUMENTS_GET_COUNTS),
+  openFilePicker: () => ipcRenderer.invoke(IPC.DOCUMENTS_OPEN_FILE_PICKER),
 
   // Watcher
   setWatchedFolder: () => ipcRenderer.invoke(IPC.WATCHER_SET_FOLDER),
@@ -53,6 +55,9 @@ const electronAPI = {
     ipcRenderer.on(IPC.WATCHER_FILE_INGESTED, handler);
     return () => ipcRenderer.removeListener(IPC.WATCHER_FILE_INGESTED, handler);
   },
+
+  // Utility
+  getPathForFile: (file: File) => webUtils.getPathForFile(file),
 
   // Settings
   getSettings: () => ipcRenderer.invoke(IPC.SETTINGS_GET),

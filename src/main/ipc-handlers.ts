@@ -4,6 +4,7 @@ import path from 'node:path';
 import { IPC_CHANNELS } from './ipc-channels';
 import type { DatabaseService } from './services/database';
 import type { PdfExtractor } from './services/pdf-extractor';
+import type { WatcherService } from './services/watcher-service';
 import {
   ingestFileToTemp,
   finalizeIngest,
@@ -26,6 +27,7 @@ interface AppState {
   db: DatabaseService | null;
   libraryPath: string | null;
   pdfExtractor: PdfExtractor | null;
+  watcher: WatcherService | null;
 }
 
 export function registerIpcHandlers(
@@ -262,6 +264,68 @@ export function registerIpcHandlers(
     } catch (err) {
       ipcLog.error('DOCUMENTS_GET_COUNTS failed:', err);
       return null;
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.DOCUMENTS_OPEN_FILE_PICKER, async () => {
+    try {
+      const result = await dialog.showOpenDialog({
+        title: 'Import Files',
+        properties: ['openFile', 'multiSelections'],
+        filters: [
+          {
+            name: 'Documents',
+            extensions: ['pdf', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'txt', 'md', 'docx'],
+          },
+        ],
+      });
+      if (result.canceled || result.filePaths.length === 0) return null;
+      return result.filePaths;
+    } catch (err) {
+      ipcLog.error('DOCUMENTS_OPEN_FILE_PICKER failed:', err);
+      return null;
+    }
+  });
+
+  // ── Watcher ─────────────────────────────────────────────────
+
+  ipcMain.handle(IPC_CHANNELS.WATCHER_SET_FOLDER, async () => {
+    try {
+      const result = await dialog.showOpenDialog({
+        title: 'Choose Watched Folder',
+        properties: ['openDirectory'],
+      });
+      if (result.canceled || result.filePaths.length === 0) return null;
+
+      const folderPath = result.filePaths[0];
+      if (state.watcher) {
+        await state.watcher.start(folderPath);
+      }
+      updateSettings({ watchedFolderPath: folderPath });
+      return folderPath;
+    } catch (err) {
+      ipcLog.error('WATCHER_SET_FOLDER failed:', err);
+      return null;
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.WATCHER_GET_FOLDER, () => {
+    try {
+      return state.watcher?.getWatchedFolder() ?? null;
+    } catch (err) {
+      ipcLog.error('WATCHER_GET_FOLDER failed:', err);
+      return null;
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.WATCHER_CLEAR_FOLDER, async () => {
+    try {
+      if (state.watcher) {
+        await state.watcher.stop();
+      }
+      updateSettings({ watchedFolderPath: undefined });
+    } catch (err) {
+      ipcLog.error('WATCHER_CLEAR_FOLDER failed:', err);
     }
   });
 
