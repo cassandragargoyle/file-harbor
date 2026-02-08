@@ -189,6 +189,9 @@ export default function App() {
           <MainContent
             onContextMenu={handleContextMenu}
             onFile={handleFileAction}
+            onExport={(docId) => ipc.exportDocument(docId)}
+            onOpen={(docId) => ipc.openDocumentExternally(docId)}
+            onReveal={(docId) => ipc.revealInFinder(docId)}
             onDelete={handleDeleteAction}
           />
         </div>

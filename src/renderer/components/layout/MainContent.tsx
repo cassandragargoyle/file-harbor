@@ -6,10 +6,13 @@ import { cn } from '../../lib/utils';
 interface MainContentProps {
   onContextMenu?: (docId: string, x: number, y: number) => void;
   onFile?: (docId: string) => void;
+  onExport?: (docId: string) => void;
+  onOpen?: (docId: string) => void;
+  onReveal?: (docId: string) => void;
   onDelete?: (docId: string) => void;
 }
 
-export function MainContent({ onContextMenu, onFile, onDelete }: MainContentProps) {
+export function MainContent({ onContextMenu, onFile, onExport, onOpen, onReveal, onDelete }: MainContentProps) {
   const currentView = useAppStore((s) => s.currentView);
   const documents = useAppStore((s) => s.documents);
   const sortBy = useAppStore((s) => s.sortBy);
@@ -72,6 +75,10 @@ export function MainContent({ onContextMenu, onFile, onDelete }: MainContentProp
           onContextMenu={onContextMenu}
           onDoubleClick={(docId) => setPreviewDocument(docId)}
           onFile={onFile}
+          onExport={onExport}
+          onOpen={onOpen}
+          onReveal={onReveal}
+          onDelete={onDelete}
         />
       </div>
 

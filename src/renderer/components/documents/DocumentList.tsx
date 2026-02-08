@@ -6,9 +6,13 @@ interface DocumentListProps {
   onContextMenu?: (docId: string, x: number, y: number) => void;
   onDoubleClick?: (docId: string) => void;
   onFile?: (docId: string) => void;
+  onExport?: (docId: string) => void;
+  onOpen?: (docId: string) => void;
+  onReveal?: (docId: string) => void;
+  onDelete?: (docId: string) => void;
 }
 
-export function DocumentList({ onContextMenu, onDoubleClick, onFile }: DocumentListProps) {
+export function DocumentList({ onContextMenu, onDoubleClick, onFile, onExport, onOpen, onReveal, onDelete }: DocumentListProps) {
   const documents = useAppStore((s) => s.documents);
   const selectedDocumentId = useAppStore((s) => s.selectedDocumentId);
   const setSelectedDocument = useAppStore((s) => s.setSelectedDocument);
@@ -69,6 +73,10 @@ export function DocumentList({ onContextMenu, onDoubleClick, onFile }: DocumentL
           onDoubleClick={() => onDoubleClick?.(doc.id)}
           onContextMenu={(e) => onContextMenu?.(doc.id, e.clientX, e.clientY)}
           onFile={onFile ? () => onFile(doc.id) : undefined}
+          onExport={onExport ? () => onExport(doc.id) : undefined}
+          onOpen={onOpen ? () => onOpen(doc.id) : undefined}
+          onReveal={onReveal ? () => onReveal(doc.id) : undefined}
+          onDelete={onDelete ? () => onDelete(doc.id) : undefined}
         />
       ))}
     </div>
