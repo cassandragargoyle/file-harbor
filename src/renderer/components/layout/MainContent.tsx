@@ -71,6 +71,7 @@ export function MainContent({ onContextMenu, onFile, onDelete }: MainContentProp
         <DocumentList
           onContextMenu={onContextMenu}
           onDoubleClick={(docId) => setPreviewDocument(docId)}
+          onFile={onFile}
         />
       </div>
 

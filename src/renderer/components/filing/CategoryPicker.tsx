@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Command } from 'cmdk';
 import {
+  Inbox,
   UserRound,
   Receipt,
   Landmark,
@@ -33,7 +34,7 @@ const CATEGORY_ICONS: Record<Category, React.ComponentType<{ className?: string 
 };
 
 interface CategoryPickerProps {
-  onSelect: (category: Category) => void;
+  onSelect: (category: Category | null) => void;
   onClose: () => void;
 }
 
@@ -72,6 +73,15 @@ export function CategoryPicker({ onSelect, onClose }: CategoryPickerProps) {
           <Command.Empty className="px-4 py-6 text-center text-sm text-faint">
             No matching category.
           </Command.Empty>
+          <Command.Item
+            value="Inbox"
+            onSelect={() => onSelect(null)}
+            className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm text-secondary data-[selected=true]:bg-elevated data-[selected=true]:text-foreground"
+          >
+            <Inbox className="h-4 w-4 shrink-0 text-faint" />
+            Inbox
+          </Command.Item>
+          <div className="mx-2 my-1 border-t border-border/50" />
           {CATEGORIES.map((cat) => {
             const Icon = CATEGORY_ICONS[cat];
             return (

@@ -5,9 +5,10 @@ import { DocumentRow } from './DocumentRow';
 interface DocumentListProps {
   onContextMenu?: (docId: string, x: number, y: number) => void;
   onDoubleClick?: (docId: string) => void;
+  onFile?: (docId: string) => void;
 }
 
-export function DocumentList({ onContextMenu, onDoubleClick }: DocumentListProps) {
+export function DocumentList({ onContextMenu, onDoubleClick, onFile }: DocumentListProps) {
   const documents = useAppStore((s) => s.documents);
   const selectedDocumentId = useAppStore((s) => s.selectedDocumentId);
   const setSelectedDocument = useAppStore((s) => s.setSelectedDocument);
@@ -66,6 +67,7 @@ export function DocumentList({ onContextMenu, onDoubleClick }: DocumentListProps
           onClick={() => setSelectedDocument(doc.id)}
           onDoubleClick={() => onDoubleClick?.(doc.id)}
           onContextMenu={(e) => onContextMenu?.(doc.id, e.clientX, e.clientY)}
+          onFile={onFile ? () => onFile(doc.id) : undefined}
         />
       ))}
     </div>

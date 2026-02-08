@@ -1,4 +1,4 @@
-import { FileText, Image, File } from 'lucide-react';
+import { FileText, Image, File, FolderInput } from 'lucide-react';
 import type { DocumentRecord } from '../../../shared/types';
 import { relativeTime } from '../../lib/format';
 import { cn } from '../../lib/utils';
@@ -15,12 +15,14 @@ export function DocumentRow({
   onClick,
   onDoubleClick,
   onContextMenu,
+  onFile,
 }: {
   document: DocumentRecord;
   selected: boolean;
   onClick: () => void;
   onDoubleClick?: () => void;
   onContextMenu?: (e: React.MouseEvent) => void;
+  onFile?: () => void;
 }) {
   const Icon = getFileIcon(document.mime_type);
 
@@ -35,7 +37,7 @@ export function DocumentRow({
       }}
       data-document-id={document.id}
       className={cn(
-        'flex w-full items-center gap-3 border-b border-border/50 px-4 py-3 text-left transition-colors',
+        'group flex w-full items-center gap-3 border-b border-border/50 px-4 py-3 text-left transition-colors',
         selected ? 'bg-elevated' : 'hover:bg-elevated/30'
       )}
     >
@@ -51,6 +53,23 @@ export function DocumentRow({
           )}
         </p>
       </div>
+      {onFile && (
+        <span
+          role="button"
+          tabIndex={-1}
+          title="File to..."
+          onClick={(e) => {
+            e.stopPropagation();
+            onFile();
+          }}
+          className={cn(
+            'shrink-0 rounded p-1 text-faint transition-colors hover:bg-highlight hover:text-foreground',
+            selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+          )}
+        >
+          <FolderInput className="h-4 w-4" />
+        </span>
+      )}
     </button>
   );
 }

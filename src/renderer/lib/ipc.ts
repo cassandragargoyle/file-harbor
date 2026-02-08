@@ -20,7 +20,7 @@ export const ingestFiles = (paths: string[], source?: DocumentSource): Promise<I
   api.ingestFiles(paths, source);
 export const getDocumentsByCategory = (category: Category | null): Promise<DocumentRecord[]> =>
   api.getDocumentsByCategory(category);
-export const updateDocumentCategory = (id: string, category: Category) =>
+export const updateDocumentCategory = (id: string, category: Category | null) =>
   api.updateDocumentCategory(id, category);
 export const deleteDocument = (id: string) => api.deleteDocument(id);
 export const searchDocuments = (query: string): Promise<DocumentRecord[]> =>

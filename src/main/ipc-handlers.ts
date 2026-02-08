@@ -179,7 +179,7 @@ export function registerIpcHandlers(
 
   ipcMain.handle(
     IPC_CHANNELS.DOCUMENTS_UPDATE_CATEGORY,
-    (_event, id: string, category: Category) => {
+    (_event, id: string, category: Category | null) => {
       try {
         if (!state.db) return;
         state.db.updateDocumentCategory(id, category);

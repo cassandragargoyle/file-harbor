@@ -63,7 +63,7 @@ export class DatabaseService {
       .all() as DocumentRecord[];
   }
 
-  updateDocumentCategory(id: string, category: Category): void {
+  updateDocumentCategory(id: string, category: Category | null): void {
     this.db
       .update(schema.documents)
       .set({ category, updated_at: new Date().toISOString() })

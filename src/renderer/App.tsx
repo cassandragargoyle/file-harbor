@@ -84,11 +84,11 @@ export default function App() {
     }
   }, [loadDocuments, refreshCounts]);
 
-  const handleCategorySelect = useCallback(async (category: Category) => {
+  const handleCategorySelect = useCallback(async (category: Category | null) => {
     if (!categoryPickerDocId) return;
     try {
       await ipc.updateDocumentCategory(categoryPickerDocId, category);
-      toast.success(`Filed to ${category}`);
+      toast.success(category ? `Filed to ${category}` : 'Moved to Inbox');
       await loadDocuments();
       await refreshCounts();
     } catch {
