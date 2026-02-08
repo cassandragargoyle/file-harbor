@@ -16,6 +16,9 @@ interface AppState {
   selectedDocumentId: string | null;
   sortBy: 'date' | 'name';
 
+  // Preview
+  previewDocumentId: string | null;
+
   // Search
   searchQuery: string;
   isSearching: boolean;
@@ -32,6 +35,7 @@ interface AppState {
   loadDocuments: () => Promise<void>;
   refreshCounts: () => Promise<void>;
   setSelectedDocument: (id: string | null) => void;
+  setPreviewDocument: (id: string | null) => void;
   setSortBy: (sort: 'date' | 'name') => void;
   searchDocuments: (query: string) => Promise<void>;
   clearSearch: () => void;
@@ -44,6 +48,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   documents: [],
   selectedDocumentId: null,
   sortBy: 'date',
+  previewDocumentId: null,
   searchQuery: '',
   isSearching: false,
   sidebarCounts: null,
@@ -52,7 +57,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   setLibraryPath: (path) => set({ libraryPath: path }),
 
   setCurrentView: async (view) => {
-    set({ currentView: view, selectedDocumentId: null, searchQuery: '', isSearching: false });
+    set({ currentView: view, selectedDocumentId: null, previewDocumentId: null, searchQuery: '', isSearching: false });
     await get().loadDocuments();
   },
 
@@ -84,6 +89,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   setSelectedDocument: (id) => set({ selectedDocumentId: id }),
+
+  setPreviewDocument: (id) => set({ previewDocumentId: id }),
 
   setSortBy: (sort) => {
     set({ sortBy: sort });

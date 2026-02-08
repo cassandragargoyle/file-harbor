@@ -2,7 +2,12 @@ import { useEffect, useCallback } from 'react';
 import { useAppStore, type ViewType } from '../../stores/app-store';
 import { DocumentRow } from './DocumentRow';
 
-export function DocumentList() {
+interface DocumentListProps {
+  onContextMenu?: (docId: string, x: number, y: number) => void;
+  onDoubleClick?: (docId: string) => void;
+}
+
+export function DocumentList({ onContextMenu, onDoubleClick }: DocumentListProps) {
   const documents = useAppStore((s) => s.documents);
   const selectedDocumentId = useAppStore((s) => s.selectedDocumentId);
   const setSelectedDocument = useAppStore((s) => s.setSelectedDocument);
@@ -59,6 +64,8 @@ export function DocumentList() {
           document={doc}
           selected={doc.id === selectedDocumentId}
           onClick={() => setSelectedDocument(doc.id)}
+          onDoubleClick={() => onDoubleClick?.(doc.id)}
+          onContextMenu={(e) => onContextMenu?.(doc.id, e.clientX, e.clientY)}
         />
       ))}
     </div>

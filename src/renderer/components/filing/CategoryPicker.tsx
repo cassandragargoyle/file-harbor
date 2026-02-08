@@ -1,0 +1,93 @@
+import { useEffect, useRef } from 'react';
+import { Command } from 'cmdk';
+import {
+  UserRound,
+  Receipt,
+  Landmark,
+  Shield,
+  Heart,
+  House,
+  Briefcase,
+  Baby,
+  ReceiptText,
+  Scale,
+  Zap,
+  FolderOpen,
+} from 'lucide-react';
+import type { Category } from '../../../shared/types';
+import { CATEGORIES } from '../../../shared/constants';
+
+const CATEGORY_ICONS: Record<Category, React.ComponentType<{ className?: string }>> = {
+  Identity: UserRound,
+  Taxes: Receipt,
+  Banking: Landmark,
+  Insurance: Shield,
+  Medical: Heart,
+  Home: House,
+  Work: Briefcase,
+  Kids: Baby,
+  Receipts: ReceiptText,
+  Legal: Scale,
+  Utilities: Zap,
+  Other: FolderOpen,
+};
+
+interface CategoryPickerProps {
+  onSelect: (category: Category) => void;
+  onClose: () => void;
+}
+
+export function CategoryPicker({ onSelect, onClose }: CategoryPickerProps) {
+  const backdropRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKey, true);
+    return () => window.removeEventListener('keydown', handleKey, true);
+  }, [onClose]);
+
+  return (
+    <div
+      ref={backdropRef}
+      className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 pt-[20vh]"
+      onMouseDown={(e) => {
+        if (e.target === backdropRef.current) onClose();
+      }}
+    >
+      <Command
+        className="w-full max-w-sm overflow-hidden rounded-xl border border-border bg-base shadow-2xl"
+        label="File to category"
+      >
+        <Command.Input
+          autoFocus
+          placeholder="Choose category..."
+          className="w-full border-b border-border bg-transparent px-4 py-3 text-sm text-foreground placeholder-faint outline-none"
+        />
+        <Command.List className="max-h-72 overflow-y-auto p-2">
+          <Command.Empty className="px-4 py-6 text-center text-sm text-faint">
+            No matching category.
+          </Command.Empty>
+          {CATEGORIES.map((cat) => {
+            const Icon = CATEGORY_ICONS[cat];
+            return (
+              <Command.Item
+                key={cat}
+                value={cat}
+                onSelect={() => onSelect(cat)}
+                className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm text-secondary data-[selected=true]:bg-elevated data-[selected=true]:text-foreground"
+              >
+                <Icon className="h-4 w-4 shrink-0 text-faint" />
+                {cat}
+              </Command.Item>
+            );
+          })}
+        </Command.List>
+      </Command>
+    </div>
+  );
+}

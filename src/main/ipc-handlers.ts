@@ -287,6 +287,31 @@ export function registerIpcHandlers(
     }
   });
 
+  ipcMain.handle(IPC_CHANNELS.DOCUMENTS_GET_PROTOCOL_URL, (_event, id: string) => {
+    try {
+      if (!state.db) return null;
+      const doc = state.db.getDocument(id);
+      if (!doc) return null;
+      return `file-harbor://${doc.stored_path}`;
+    } catch (err) {
+      ipcLog.error('DOCUMENTS_GET_PROTOCOL_URL failed:', err);
+      return null;
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.DOCUMENTS_OPEN_EXTERNALLY, (_event, id: string) => {
+    try {
+      if (!state.db || !state.libraryPath) return;
+      const doc = state.db.getDocument(id);
+      if (doc) {
+        const absPath = getAbsolutePath(state.libraryPath, doc.stored_path);
+        shell.openPath(absPath);
+      }
+    } catch (err) {
+      ipcLog.error('DOCUMENTS_OPEN_EXTERNALLY failed:', err);
+    }
+  });
+
   // ── Watcher ─────────────────────────────────────────────────
 
   ipcMain.handle(IPC_CHANNELS.WATCHER_SET_FOLDER, async () => {

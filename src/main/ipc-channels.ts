@@ -16,6 +16,8 @@ export const IPC_CHANNELS = {
   DOCUMENTS_REVEAL_IN_FINDER: 'documents:reveal-in-finder',
   DOCUMENTS_GET_COUNTS: 'documents:get-counts',
   DOCUMENTS_OPEN_FILE_PICKER: 'documents:open-file-picker',
+  DOCUMENTS_GET_PROTOCOL_URL: 'documents:get-protocol-url',
+  DOCUMENTS_OPEN_EXTERNALLY: 'documents:open-externally',
 
   // Watcher
   WATCHER_SET_FOLDER: 'watcher:set-folder',

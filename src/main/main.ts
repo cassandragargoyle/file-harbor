@@ -1,5 +1,6 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, protocol, net } from 'electron';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import started from 'electron-squirrel-startup';
 
 import { DatabaseService } from './services/database';
@@ -80,6 +81,20 @@ const createWindow = () => {
   }
 };
 
+// ── Custom Protocol ──────────────────────────────────────────────
+
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'file-harbor',
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      stream: true,
+    },
+  },
+]);
+
 // ── Lifecycle ───────────────────────────────────────────────────
 
 app.on('ready', () => {
@@ -90,6 +105,30 @@ app.on('ready', () => {
   } else {
     mainLog.info('No valid library found — waiting for user to configure one');
   }
+
+  // Register custom protocol handler for serving library files
+  protocol.handle('file-harbor', (request) => {
+    const url = new URL(request.url);
+    const requestedPath = decodeURIComponent(url.pathname);
+
+    // Only allow objects/ path prefix
+    if (!requestedPath.startsWith('/objects/')) {
+      return new Response('Forbidden', { status: 403 });
+    }
+
+    if (!appState.libraryPath) {
+      return new Response('No library configured', { status: 503 });
+    }
+
+    const resolved = path.resolve(appState.libraryPath, requestedPath.slice(1)); // strip leading /
+
+    // Verify resolved path stays within library objects directory
+    if (!resolved.startsWith(path.join(appState.libraryPath, 'objects'))) {
+      return new Response('Forbidden', { status: 403 });
+    }
+
+    return net.fetch(pathToFileURL(resolved).toString());
+  });
 
   // Register all IPC handlers
   registerIpcHandlers(appState, initializeLibraryServices);

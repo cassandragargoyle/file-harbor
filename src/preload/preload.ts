@@ -15,6 +15,8 @@ const IPC = {
   DOCUMENTS_REVEAL_IN_FINDER: 'documents:reveal-in-finder',
   DOCUMENTS_GET_COUNTS: 'documents:get-counts',
   DOCUMENTS_OPEN_FILE_PICKER: 'documents:open-file-picker',
+  DOCUMENTS_GET_PROTOCOL_URL: 'documents:get-protocol-url',
+  DOCUMENTS_OPEN_EXTERNALLY: 'documents:open-externally',
   WATCHER_SET_FOLDER: 'watcher:set-folder',
   WATCHER_GET_FOLDER: 'watcher:get-folder',
   WATCHER_CLEAR_FOLDER: 'watcher:clear-folder',
@@ -43,6 +45,8 @@ const electronAPI = {
   revealInFinder: (id: string) => ipcRenderer.invoke(IPC.DOCUMENTS_REVEAL_IN_FINDER, id),
   getDocumentCounts: () => ipcRenderer.invoke(IPC.DOCUMENTS_GET_COUNTS),
   openFilePicker: () => ipcRenderer.invoke(IPC.DOCUMENTS_OPEN_FILE_PICKER),
+  getDocumentProtocolUrl: (id: string) => ipcRenderer.invoke(IPC.DOCUMENTS_GET_PROTOCOL_URL, id),
+  openDocumentExternally: (id: string) => ipcRenderer.invoke(IPC.DOCUMENTS_OPEN_EXTERNALLY, id),
 
   // Watcher
   setWatchedFolder: () => ipcRenderer.invoke(IPC.WATCHER_SET_FOLDER),

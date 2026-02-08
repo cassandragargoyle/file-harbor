@@ -18,6 +18,8 @@ interface ElectronAPI {
   revealInFinder: (id: string) => Promise<void>;
   getDocumentCounts: () => Promise<DocumentCounts | null>;
   openFilePicker: () => Promise<string[] | null>;
+  getDocumentProtocolUrl: (id: string) => Promise<string | null>;
+  openDocumentExternally: (id: string) => Promise<void>;
 
   // Watcher
   setWatchedFolder: () => Promise<string | null>;

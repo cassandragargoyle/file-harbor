@@ -31,6 +31,9 @@ export const exportDocument = (id: string): Promise<boolean> => api.exportDocume
 export const revealInFinder = (id: string) => api.revealInFinder(id);
 export const getDocumentCounts = (): Promise<DocumentCounts | null> => api.getDocumentCounts();
 export const openFilePicker = (): Promise<string[] | null> => api.openFilePicker();
+export const getDocumentProtocolUrl = (id: string): Promise<string | null> =>
+  api.getDocumentProtocolUrl(id);
+export const openDocumentExternally = (id: string) => api.openDocumentExternally(id);
 
 // Watcher
 export const setWatchedFolder = () => api.setWatchedFolder();

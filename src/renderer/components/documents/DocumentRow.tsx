@@ -13,16 +13,26 @@ export function DocumentRow({
   document,
   selected,
   onClick,
+  onDoubleClick,
+  onContextMenu,
 }: {
   document: DocumentRecord;
   selected: boolean;
   onClick: () => void;
+  onDoubleClick?: () => void;
+  onContextMenu?: (e: React.MouseEvent) => void;
 }) {
   const Icon = getFileIcon(document.mime_type);
 
   return (
     <button
       onClick={onClick}
+      onDoubleClick={onDoubleClick}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        onClick(); // select on right-click too
+        onContextMenu?.(e);
+      }}
       data-document-id={document.id}
       className={cn(
         'flex w-full items-center gap-3 border-b border-border/50 px-4 py-3 text-left transition-colors',
