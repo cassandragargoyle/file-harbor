@@ -8,6 +8,7 @@ const IPC = {
   DOCUMENTS_INGEST_FILES: 'documents:ingest-files',
   DOCUMENTS_GET_BY_CATEGORY: 'documents:get-by-category',
   DOCUMENTS_UPDATE_CATEGORY: 'documents:update-category',
+  DOCUMENTS_RENAME: 'documents:rename',
   DOCUMENTS_DELETE: 'documents:delete',
   DOCUMENTS_SEARCH: 'documents:search',
   DOCUMENTS_GET_FILE_PATH: 'documents:get-file-path',
@@ -48,6 +49,8 @@ const electronAPI = {
     ipcRenderer.invoke(IPC.DOCUMENTS_GET_BY_CATEGORY, category),
   updateDocumentCategory: (id: string, category: string) =>
     ipcRenderer.invoke(IPC.DOCUMENTS_UPDATE_CATEGORY, id, category),
+  renameDocument: (id: string, newFilename: string) =>
+    ipcRenderer.invoke(IPC.DOCUMENTS_RENAME, id, newFilename),
   deleteDocument: (id: string) => ipcRenderer.invoke(IPC.DOCUMENTS_DELETE, id),
   searchDocuments: (query: string) => ipcRenderer.invoke(IPC.DOCUMENTS_SEARCH, query),
   getDocumentFilePath: (id: string) => ipcRenderer.invoke(IPC.DOCUMENTS_GET_FILE_PATH, id),

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { FolderInput, Eye, Download, FolderSearch, Trash2 } from 'lucide-react';
+import { FolderInput, Eye, Pencil, Download, FolderSearch, Trash2 } from 'lucide-react';
 
 export interface ContextMenuAction {
   label: string;
@@ -73,12 +73,14 @@ export function ContextMenu({ x, y, actions, onClose }: ContextMenuProps) {
 export function getDocumentActions({
   onFile,
   onPreview,
+  onRename,
   onExport,
   onReveal,
   onDelete,
 }: {
   onFile: () => void;
   onPreview: () => void;
+  onRename: () => void;
   onExport: () => void;
   onReveal: () => void;
   onDelete: () => void;
@@ -86,6 +88,7 @@ export function getDocumentActions({
   return [
     { label: 'File to...', icon: FolderInput, onClick: onFile },
     { label: 'Preview', icon: Eye, onClick: onPreview },
+    { label: 'Rename...', icon: Pencil, onClick: onRename },
     { label: 'Export...', icon: Download, onClick: onExport },
     { label: 'Reveal in Finder', icon: FolderSearch, onClick: onReveal },
     { label: 'Delete', icon: Trash2, onClick: onDelete, danger: true, separator: true },

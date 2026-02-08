@@ -11,6 +11,7 @@ interface ElectronAPI {
   ingestFiles: (paths: string[], source?: DocumentSource) => Promise<IngestResult[]>;
   getDocumentsByCategory: (category: Category | null) => Promise<DocumentRecord[]>;
   updateDocumentCategory: (id: string, category: Category | null) => Promise<void>;
+  renameDocument: (id: string, newFilename: string) => Promise<void>;
   deleteDocument: (id: string) => Promise<void>;
   searchDocuments: (query: string) => Promise<DocumentRecord[]>;
   getDocumentFilePath: (id: string) => Promise<string | null>;

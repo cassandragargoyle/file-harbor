@@ -79,6 +79,14 @@ export class DatabaseService {
       .run();
   }
 
+  renameDocument(id: string, newFilename: string): void {
+    this.db
+      .update(schema.documents)
+      .set({ original_filename: newFilename, updated_at: new Date().toISOString() })
+      .where(eq(schema.documents.id, id))
+      .run();
+  }
+
   deleteDocument(id: string): void {
     this.db
       .delete(schema.documents)

@@ -23,6 +23,8 @@ export const getDocumentsByCategory = (category: Category | null): Promise<Docum
   api.getDocumentsByCategory(category);
 export const updateDocumentCategory = (id: string, category: Category | null) =>
   api.updateDocumentCategory(id, category);
+export const renameDocument = (id: string, newFilename: string) =>
+  api.renameDocument(id, newFilename);
 export const deleteDocument = (id: string) => api.deleteDocument(id);
 export const searchDocuments = (query: string): Promise<DocumentRecord[]> =>
   api.searchDocuments(query);

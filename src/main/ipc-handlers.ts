@@ -202,6 +202,18 @@ export function registerIpcHandlers(
     }
   );
 
+  ipcMain.handle(
+    IPC_CHANNELS.DOCUMENTS_RENAME,
+    (_event, id: string, newFilename: string) => {
+      try {
+        if (!state.db) return;
+        state.db.renameDocument(id, newFilename);
+      } catch (err) {
+        ipcLog.error('DOCUMENTS_RENAME failed:', err);
+      }
+    }
+  );
+
   ipcMain.handle(IPC_CHANNELS.DOCUMENTS_DELETE, async (_event, id: string) => {
     try {
       if (!state.db || !state.libraryPath) return;

@@ -9,6 +9,7 @@ import { DropZone } from './components/inbox/DropZone';
 import { CategoryPicker } from './components/filing/CategoryPicker';
 import { ContextMenu, getDocumentActions } from './components/documents/ContextMenu';
 import { DeleteDialog } from './components/documents/DeleteDialog';
+import { RenameDialog } from './components/documents/RenameDialog';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { showIngestToasts } from './lib/toast-helpers';
 import type { Category, DocumentRecord } from '../shared/types';
@@ -28,10 +29,12 @@ export default function App() {
   // ── Overlay state ──────────────────────────────────────────
   const [categoryPickerDocId, setCategoryPickerDocId] = useState<string | null>(null);
   const [deleteDocId, setDeleteDocId] = useState<string | null>(null);
+  const [renameDocId, setRenameDocId] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ docId: string; x: number; y: number } | null>(null);
 
   const selectedDoc: DocumentRecord | undefined = documents.find((d) => d.id === selectedDocumentId);
   const deleteDoc: DocumentRecord | undefined = deleteDocId ? documents.find((d) => d.id === deleteDocId) : undefined;
+  const renameDoc: DocumentRecord | undefined = renameDocId ? documents.find((d) => d.id === renameDocId) : undefined;
 
   // ── Initialization ─────────────────────────────────────────
   useEffect(() => {
@@ -52,6 +55,11 @@ export default function App() {
     const id = docId ?? selectedDocumentId;
     if (id) setPreviewDocument(id);
   }, [selectedDocumentId, setPreviewDocument]);
+
+  const handleRenameAction = useCallback((docId?: string) => {
+    const id = docId ?? selectedDocumentId;
+    if (id) setRenameDocId(id);
+  }, [selectedDocumentId]);
 
   const handleDeleteAction = useCallback((docId?: string) => {
     const id = docId ?? selectedDocumentId;
@@ -109,6 +117,18 @@ export default function App() {
     setCategoryPickerDocId(null);
   }, [categoryPickerDocId, loadDocuments, refreshCounts]);
 
+  const handleRenameConfirm = useCallback(async (newFilename: string) => {
+    if (!renameDocId) return;
+    try {
+      await ipc.renameDocument(renameDocId, newFilename);
+      toast.success('Document renamed');
+      await loadDocuments();
+    } catch {
+      toast.error('Failed to rename document');
+    }
+    setRenameDocId(null);
+  }, [renameDocId, loadDocuments]);
+
   const handleDeleteConfirm = useCallback(async () => {
     if (!deleteDocId) return;
     try {
@@ -152,6 +172,7 @@ export default function App() {
     ? getDocumentActions({
         onFile: () => handleFileAction(contextMenu.docId),
         onPreview: () => handlePreviewAction(contextMenu.docId),
+        onRename: () => handleRenameAction(contextMenu.docId),
         onExport: () => ipc.exportDocument(contextMenu.docId),
         onReveal: () => ipc.revealInFinder(contextMenu.docId),
         onDelete: () => handleDeleteAction(contextMenu.docId),
@@ -213,6 +234,15 @@ export default function App() {
           y={contextMenu.y}
           actions={contextMenuActions}
           onClose={() => setContextMenu(null)}
+        />
+      )}
+
+      {/* Rename dialog */}
+      {renameDoc && (
+        <RenameDialog
+          filename={renameDoc.original_filename}
+          onConfirm={handleRenameConfirm}
+          onCancel={() => setRenameDocId(null)}
         />
       )}
 
