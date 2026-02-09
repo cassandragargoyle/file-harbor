@@ -9,9 +9,11 @@ export const CATEGORIES: Category[] = [
   'Home',
   'Work',
   'Kids',
+  'Family',
   'Receipts',
   'Legal',
   'Utilities',
+  'Mail',
   'Other',
 ];
 

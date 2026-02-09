@@ -160,6 +160,7 @@ protocol.registerSchemesAsPrivileged([
       standard: true,
       secure: true,
       supportFetchAPI: true,
+      corsEnabled: true,
       stream: true,
     },
   },
@@ -178,7 +179,7 @@ app.on('ready', () => {
   }
 
   // Register custom protocol handler for serving library files
-  protocol.handle('file-harbor', (request) => {
+  protocol.handle('file-harbor', async (request) => {
     const url = new URL(request.url);
     const requestedPath = decodeURIComponent(url.pathname);
 
@@ -198,7 +199,14 @@ app.on('ready', () => {
       return new Response('Forbidden', { status: 403 });
     }
 
-    return net.fetch(pathToFileURL(resolved).toString());
+    const response = await net.fetch(pathToFileURL(resolved).toString());
+    return new Response(response.body, {
+      status: response.status,
+      headers: {
+        'content-type': response.headers.get('content-type') || 'application/octet-stream',
+        'access-control-allow-origin': '*',
+      },
+    });
   });
 
   // Build application menu

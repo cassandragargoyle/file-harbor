@@ -70,12 +70,25 @@ export default function App() {
     const paths = await ipc.openFilePicker();
     if (!paths) return;
     try {
-      const results = await ipc.ingestFiles(paths, 'file_picker');
-      showIngestToasts(results);
+      const { results, skippedCount } = await ipc.ingestFiles(paths, 'file_picker');
+      showIngestToasts(results, skippedCount);
       await loadDocuments();
       await refreshCounts();
     } catch {
       toast.error('Failed to import files');
+    }
+  }, [loadDocuments, refreshCounts]);
+
+  const handleImportFolderAction = useCallback(async () => {
+    const paths = await ipc.openFolderPicker();
+    if (!paths) return;
+    try {
+      const { results, skippedCount } = await ipc.ingestFiles(paths, 'file_picker');
+      showIngestToasts(results, skippedCount);
+      await loadDocuments();
+      await refreshCounts();
+    } catch {
+      toast.error('Failed to import folder');
     }
   }, [loadDocuments, refreshCounts]);
 
@@ -93,6 +106,10 @@ export default function App() {
       handleImportAction();
     });
 
+    const cleanupMenuFolder = ipc.onMenuImportFolder(() => {
+      handleImportFolderAction();
+    });
+
     const cleanupWatcherError = ipc.onWatcherError((message) => {
       toast.error(message);
     });
@@ -100,9 +117,10 @@ export default function App() {
     return () => {
       cleanupWatcher();
       cleanupMenu();
+      cleanupMenuFolder();
       cleanupWatcherError();
     };
-  }, [phase, loadDocuments, refreshCounts, handleImportAction]);
+  }, [phase, loadDocuments, refreshCounts, handleImportAction, handleImportFolderAction]);
 
   const handleCategorySelect = useCallback(async (category: Category | null) => {
     if (!categoryPickerDocId) return;

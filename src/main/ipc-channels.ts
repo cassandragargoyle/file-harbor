@@ -17,7 +17,9 @@ export const IPC_CHANNELS = {
   DOCUMENTS_REVEAL_IN_FINDER: 'documents:reveal-in-finder',
   DOCUMENTS_GET_COUNTS: 'documents:get-counts',
   DOCUMENTS_OPEN_FILE_PICKER: 'documents:open-file-picker',
+  DOCUMENTS_OPEN_FOLDER_PICKER: 'documents:open-folder-picker',
   DOCUMENTS_GET_PROTOCOL_URL: 'documents:get-protocol-url',
+  DOCUMENTS_READ_FILE: 'documents:read-file',
   DOCUMENTS_OPEN_EXTERNALLY: 'documents:open-externally',
 
   // Watcher
@@ -38,6 +40,7 @@ export const IPC_CHANNELS = {
 
   // Menu events (main -> renderer)
   MENU_IMPORT_FILES: 'menu:import-files',
+  MENU_IMPORT_FOLDER: 'menu:import-folder',
 
   // Settings
   SETTINGS_GET: 'settings:get',

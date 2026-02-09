@@ -5,8 +5,70 @@ import crypto from 'node:crypto';
 import { pipeline } from 'node:stream/promises';
 import { v4 as uuidv4 } from 'uuid';
 
-import { ACCEPTED_MIME_TYPES } from '../../shared/constants';
+import { ACCEPTED_EXTENSIONS, ACCEPTED_MIME_TYPES } from '../../shared/constants';
 import { fileLog } from '../lib/logger';
+
+const IGNORED_PATTERNS = [
+  /^\./,            // dotfiles
+  /\.DS_Store$/,
+  /^~\$/,           // Office temp files
+  /\.tmp$/,
+  /\.crdownload$/,
+  /\.part$/,
+];
+
+export interface ResolveResult {
+  filePaths: string[];
+  skippedCount: number;
+}
+
+/**
+ * Resolve a mix of file and directory paths into a flat list of importable file paths.
+ * Directories are walked recursively. Unsupported file types are silently skipped.
+ */
+export async function resolveFilePaths(paths: string[]): Promise<ResolveResult> {
+  const filePaths: string[] = [];
+  let skippedCount = 0;
+
+  for (const p of paths) {
+    try {
+      const stat = await fsp.stat(p);
+      if (stat.isDirectory()) {
+        const entries: string[] = await fsp.readdir(p, { recursive: true } as any);
+        for (const entry of entries) {
+          const entryStr = String(entry);
+          const filename = path.basename(entryStr);
+          if (IGNORED_PATTERNS.some((pat) => pat.test(filename))) {
+            skippedCount++;
+            continue;
+          }
+          const ext = path.extname(entryStr).toLowerCase();
+          if (!ACCEPTED_EXTENSIONS.includes(ext)) {
+            skippedCount++;
+            continue;
+          }
+          const fullPath = path.join(p, entryStr);
+          // Ensure it's actually a file (not a subdirectory that happens to have an extension)
+          try {
+            const entryStat = await fsp.stat(fullPath);
+            if (entryStat.isFile()) {
+              filePaths.push(fullPath);
+            }
+          } catch {
+            skippedCount++;
+          }
+        }
+      } else if (stat.isFile()) {
+        filePaths.push(p);
+      }
+    } catch {
+      // Path doesn't exist or can't be accessed — skip
+      skippedCount++;
+    }
+  }
+
+  return { filePaths, skippedCount };
+}
 
 export interface IngestFileResult {
   uuid: string;

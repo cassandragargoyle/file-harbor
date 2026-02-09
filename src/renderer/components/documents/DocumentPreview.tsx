@@ -34,10 +34,19 @@ interface DocumentPreviewProps {
 
 export function DocumentPreview({ document: doc, onClose, onFile, onDelete }: DocumentPreviewProps) {
   const [protocolUrl, setProtocolUrl] = useState<string | null>(null);
+  const [pdfData, setPdfData] = useState<{ data: Uint8Array } | null>(null);
 
   useEffect(() => {
     ipc.getDocumentProtocolUrl(doc.id).then(setProtocolUrl);
   }, [doc.id]);
+
+  useEffect(() => {
+    if (doc.mime_type !== 'application/pdf') return;
+    setPdfData(null);
+    ipc.readDocumentFile(doc.id).then((buffer) => {
+      if (buffer) setPdfData({ data: new Uint8Array(buffer) });
+    });
+  }, [doc.id, doc.mime_type]);
 
   const handleExport = () => ipc.exportDocument(doc.id);
   const handleReveal = () => ipc.revealInFinder(doc.id);
@@ -67,8 +76,8 @@ export function DocumentPreview({ document: doc, onClose, onFile, onDelete }: Do
 
       {/* Preview area */}
       <div className="flex-1 overflow-auto">
-        {isPdf && protocolUrl ? (
-          <PdfPreview url={protocolUrl} />
+        {isPdf && pdfData ? (
+          <PdfPreview file={pdfData} />
         ) : isImage && protocolUrl ? (
           <ImagePreview url={protocolUrl} alt={doc.original_filename} />
         ) : (
@@ -89,14 +98,14 @@ export function DocumentPreview({ document: doc, onClose, onFile, onDelete }: Do
   );
 }
 
-function PdfPreview({ url }: { url: string }) {
+function PdfPreview({ file }: { file: { data: Uint8Array } }) {
   const [numPages, setNumPages] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState(1);
 
   return (
     <div className="flex flex-col items-center">
       <Document
-        file={url}
+        file={file}
         onLoadSuccess={({ numPages: n }) => setNumPages(n)}
         loading={<PreviewLoading />}
         error={<PreviewError message="Failed to load PDF" />}

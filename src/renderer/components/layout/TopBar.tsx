@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, Plus, X, Settings } from 'lucide-react';
+import { Search, Plus, X, Settings, ChevronDown, FolderOpen, File } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppStore } from '../../stores/app-store';
 import { SettingsDialog } from '../settings/SettingsDialog';
@@ -16,6 +16,8 @@ export function TopBar() {
   const [localQuery, setLocalQuery] = useState(searchQuery);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const [showSettings, setShowSettings] = useState(false);
+  const [showImportMenu, setShowImportMenu] = useState(false);
+  const importMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setLocalQuery(searchQuery);
@@ -39,19 +41,47 @@ export function TopBar() {
     inputRef.current?.focus();
   };
 
-  const handleImport = async () => {
+  const handleImportFiles = async () => {
+    setShowImportMenu(false);
     const paths = await ipc.openFilePicker();
     if (!paths) return;
 
     try {
-      const results = await ipc.ingestFiles(paths, 'file_picker');
-      showIngestToasts(results);
+      const { results, skippedCount } = await ipc.ingestFiles(paths, 'file_picker');
+      showIngestToasts(results, skippedCount);
       await loadDocuments();
       await refreshCounts();
     } catch {
       toast.error('Failed to import files');
     }
   };
+
+  const handleImportFolder = async () => {
+    setShowImportMenu(false);
+    const paths = await ipc.openFolderPicker();
+    if (!paths) return;
+
+    try {
+      const { results, skippedCount } = await ipc.ingestFiles(paths, 'file_picker');
+      showIngestToasts(results, skippedCount);
+      await loadDocuments();
+      await refreshCounts();
+    } catch {
+      toast.error('Failed to import folder');
+    }
+  };
+
+  // Close import menu when clicking outside
+  useEffect(() => {
+    if (!showImportMenu) return;
+    const handleClick = (e: MouseEvent) => {
+      if (importMenuRef.current && !importMenuRef.current.contains(e.target as Node)) {
+        setShowImportMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [showImportMenu]);
 
   return (
     <>
@@ -80,13 +110,41 @@ export function TopBar() {
 
           <div className="flex-1" />
 
-          <button
-            onClick={handleImport}
-            className="flex items-center gap-1.5 rounded-lg bg-elevated px-3 py-1.5 text-sm text-secondary transition-colors hover:bg-highlight hover:text-foreground"
-          >
-            <Plus className="h-4 w-4" />
-            Import
-          </button>
+          <div ref={importMenuRef} className="relative">
+            <div className="flex items-center">
+              <button
+                onClick={handleImportFiles}
+                className="flex items-center gap-1.5 rounded-l-lg bg-elevated px-3 py-1.5 text-sm text-secondary transition-colors hover:bg-highlight hover:text-foreground"
+              >
+                <Plus className="h-4 w-4" />
+                Import
+              </button>
+              <button
+                onClick={() => setShowImportMenu((v) => !v)}
+                className="flex items-center self-stretch rounded-r-lg border-l border-border bg-elevated px-1.5 text-secondary transition-colors hover:bg-highlight hover:text-foreground"
+              >
+                <ChevronDown className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            {showImportMenu && (
+              <div className="absolute right-0 top-full z-50 mt-1 min-w-[160px] rounded-lg border border-border bg-elevated py-1 shadow-lg">
+                <button
+                  onClick={handleImportFiles}
+                  className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-secondary hover:bg-highlight hover:text-foreground"
+                >
+                  <File className="h-4 w-4" />
+                  Import Files...
+                </button>
+                <button
+                  onClick={handleImportFolder}
+                  className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-secondary hover:bg-highlight hover:text-foreground"
+                >
+                  <FolderOpen className="h-4 w-4" />
+                  Import Folder...
+                </button>
+              </div>
+            )}
+          </div>
 
           <button
             onClick={() => setShowSettings(true)}

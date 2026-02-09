@@ -8,7 +8,7 @@ interface ElectronAPI {
   openLibraryFolder: () => Promise<void>;
 
   // Documents
-  ingestFiles: (paths: string[], source?: DocumentSource) => Promise<IngestResult[]>;
+  ingestFiles: (paths: string[], source?: DocumentSource) => Promise<{ results: IngestResult[]; skippedCount: number }>;
   getDocumentsByCategory: (category: Category | null) => Promise<DocumentRecord[]>;
   updateDocumentCategory: (id: string, category: Category | null) => Promise<void>;
   renameDocument: (id: string, newFilename: string) => Promise<void>;
@@ -19,7 +19,9 @@ interface ElectronAPI {
   revealInFinder: (id: string) => Promise<void>;
   getDocumentCounts: () => Promise<DocumentCounts | null>;
   openFilePicker: () => Promise<string[] | null>;
+  openFolderPicker: () => Promise<string[] | null>;
   getDocumentProtocolUrl: (id: string) => Promise<string | null>;
+  readDocumentFile: (id: string) => Promise<ArrayBuffer | null>;
   openDocumentExternally: (id: string) => Promise<void>;
 
   // Watcher
@@ -34,6 +36,7 @@ interface ElectronAPI {
 
   // Menu events
   onMenuImportFiles: (callback: () => void) => () => void;
+  onMenuImportFolder: (callback: () => void) => () => void;
 
   // Workspaces
   listWorkspaces: () => Promise<Workspace[]>;

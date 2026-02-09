@@ -17,7 +17,7 @@ export const getLibraryInfo = (): Promise<LibraryInfo | null> => api.getLibraryI
 export const openLibraryFolder = () => api.openLibraryFolder();
 
 // Documents
-export const ingestFiles = (paths: string[], source?: DocumentSource): Promise<IngestResult[]> =>
+export const ingestFiles = (paths: string[], source?: DocumentSource): Promise<{ results: IngestResult[]; skippedCount: number }> =>
   api.ingestFiles(paths, source);
 export const getDocumentsByCategory = (category: Category | null): Promise<DocumentRecord[]> =>
   api.getDocumentsByCategory(category);
@@ -34,8 +34,11 @@ export const exportDocument = (id: string): Promise<boolean> => api.exportDocume
 export const revealInFinder = (id: string) => api.revealInFinder(id);
 export const getDocumentCounts = (): Promise<DocumentCounts | null> => api.getDocumentCounts();
 export const openFilePicker = (): Promise<string[] | null> => api.openFilePicker();
+export const openFolderPicker = (): Promise<string[] | null> => api.openFolderPicker();
 export const getDocumentProtocolUrl = (id: string): Promise<string | null> =>
   api.getDocumentProtocolUrl(id);
+export const readDocumentFile = (id: string): Promise<ArrayBuffer | null> =>
+  api.readDocumentFile(id);
 export const openDocumentExternally = (id: string) => api.openDocumentExternally(id);
 
 // Watcher
@@ -50,6 +53,7 @@ export const getPathForFile = (file: File): string => api.getPathForFile(file);
 
 // Menu events
 export const onMenuImportFiles = (cb: () => void) => api.onMenuImportFiles(cb);
+export const onMenuImportFolder = (cb: () => void) => api.onMenuImportFolder(cb);
 
 // Workspaces
 export const listWorkspaces = (): Promise<Workspace[]> => api.listWorkspaces();

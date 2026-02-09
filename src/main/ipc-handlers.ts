@@ -1,5 +1,6 @@
 import { ipcMain, dialog, shell, BrowserWindow } from 'electron';
 import path from 'node:path';
+import fsp from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 
 import { IPC_CHANNELS } from './ipc-channels';
@@ -13,6 +14,7 @@ import {
   deleteStoredFile,
   exportFile,
   getAbsolutePath,
+  resolveFilePaths,
 } from './services/file-service';
 import {
   initializeLibrary,
@@ -102,16 +104,22 @@ export function registerIpcHandlers(
     IPC_CHANNELS.DOCUMENTS_INGEST_FILES,
     async (_event, filePaths: string[], source: DocumentSource = 'dragdrop') => {
       if (!state.db || !state.libraryPath) {
-        return filePaths.map((p) => ({
-          path: p,
-          status: 'error' as const,
-          error: 'No library configured',
-        }));
+        return {
+          results: filePaths.map((p) => ({
+            path: p,
+            status: 'error' as const,
+            error: 'No library configured',
+          })),
+          skippedCount: 0,
+        };
       }
+
+      // Resolve any directories into individual file paths
+      const { filePaths: resolvedPaths, skippedCount } = await resolveFilePaths(filePaths);
 
       const results: IngestResult[] = [];
 
-      for (const filePath of filePaths) {
+      for (const filePath of resolvedPaths) {
         try {
           const ext = path.extname(filePath).toLowerCase();
           if (!ACCEPTED_EXTENSIONS.includes(ext)) {
@@ -173,7 +181,7 @@ export function registerIpcHandlers(
         }
       }
 
-      return results;
+      return { results, skippedCount };
     }
   );
 
@@ -312,14 +320,42 @@ export function registerIpcHandlers(
     }
   });
 
+  ipcMain.handle(IPC_CHANNELS.DOCUMENTS_OPEN_FOLDER_PICKER, async () => {
+    try {
+      const result = await dialog.showOpenDialog({
+        title: 'Import Folder',
+        properties: ['openDirectory'],
+      });
+      if (result.canceled || result.filePaths.length === 0) return null;
+      return result.filePaths;
+    } catch (err) {
+      ipcLog.error('DOCUMENTS_OPEN_FOLDER_PICKER failed:', err);
+      return null;
+    }
+  });
+
   ipcMain.handle(IPC_CHANNELS.DOCUMENTS_GET_PROTOCOL_URL, (_event, id: string) => {
     try {
       if (!state.db) return null;
       const doc = state.db.getDocument(id);
       if (!doc) return null;
-      return `file-harbor://${doc.stored_path}`;
+      return `file-harbor:///${doc.stored_path}`;
     } catch (err) {
       ipcLog.error('DOCUMENTS_GET_PROTOCOL_URL failed:', err);
+      return null;
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.DOCUMENTS_READ_FILE, async (_event, id: string) => {
+    try {
+      if (!state.db || !state.libraryPath) return null;
+      const doc = state.db.getDocument(id);
+      if (!doc) return null;
+      const filePath = path.join(state.libraryPath, doc.stored_path);
+      const buffer = await fsp.readFile(filePath);
+      return buffer;
+    } catch (err) {
+      ipcLog.error('DOCUMENTS_READ_FILE failed:', err);
       return null;
     }
   });

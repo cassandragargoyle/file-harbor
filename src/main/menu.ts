@@ -35,6 +35,16 @@ export function buildAppMenu(getLibraryPath: () => string | null): void {
           },
         },
         {
+          label: 'Import Folder...',
+          accelerator: 'CmdOrCtrl+Shift+I',
+          click: () => {
+            const win = BrowserWindow.getFocusedWindow();
+            if (win) {
+              win.webContents.send(IPC_CHANNELS.MENU_IMPORT_FOLDER);
+            }
+          },
+        },
+        {
           label: 'Open Library Folder',
           click: () => {
             const libraryPath = getLibraryPath();

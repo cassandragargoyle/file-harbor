@@ -9,9 +9,11 @@ export type Category =
   | 'Home'
   | 'Work'
   | 'Kids'
+  | 'Family'
   | 'Receipts'
   | 'Legal'
   | 'Utilities'
+  | 'Mail'
   | 'Other';
 
 export interface DocumentRecord {

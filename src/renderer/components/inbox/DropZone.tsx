@@ -44,9 +44,9 @@ export function DropZone() {
       if (paths.length === 0) return;
 
       try {
-        const results = await ipc.ingestFiles(paths, 'dragdrop');
+        const { results, skippedCount } = await ipc.ingestFiles(paths, 'dragdrop');
         console.log('[DropZone] results:', results);
-        showIngestToasts(results);
+        showIngestToasts(results, skippedCount);
         await loadDocuments();
         await refreshCounts();
       } catch {

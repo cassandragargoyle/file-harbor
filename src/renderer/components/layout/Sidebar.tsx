@@ -8,9 +8,11 @@ import {
   House,
   Briefcase,
   Baby,
+  Users,
   ReceiptText,
   Scale,
   Zap,
+  Mail,
   FolderOpen,
 } from 'lucide-react';
 import type { Category } from '../../../shared/types';
@@ -28,9 +30,11 @@ const CATEGORY_ICONS: Record<Category, React.ComponentType<{ className?: string 
   Home: House,
   Work: Briefcase,
   Kids: Baby,
+  Family: Users,
   Receipts: ReceiptText,
   Legal: Scale,
   Utilities: Zap,
+  Mail: Mail,
   Other: FolderOpen,
 };
 

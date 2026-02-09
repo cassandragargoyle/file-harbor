@@ -16,7 +16,9 @@ const IPC = {
   DOCUMENTS_REVEAL_IN_FINDER: 'documents:reveal-in-finder',
   DOCUMENTS_GET_COUNTS: 'documents:get-counts',
   DOCUMENTS_OPEN_FILE_PICKER: 'documents:open-file-picker',
+  DOCUMENTS_OPEN_FOLDER_PICKER: 'documents:open-folder-picker',
   DOCUMENTS_GET_PROTOCOL_URL: 'documents:get-protocol-url',
+  DOCUMENTS_READ_FILE: 'documents:read-file',
   DOCUMENTS_OPEN_EXTERNALLY: 'documents:open-externally',
   WATCHER_SET_FOLDER: 'watcher:set-folder',
   WATCHER_GET_FOLDER: 'watcher:get-folder',
@@ -24,6 +26,7 @@ const IPC = {
   WATCHER_FILE_INGESTED: 'watcher:file-ingested',
   WATCHER_ERROR: 'watcher:error',
   MENU_IMPORT_FILES: 'menu:import-files',
+  MENU_IMPORT_FOLDER: 'menu:import-folder',
   WORKSPACE_LIST: 'workspace:list',
   WORKSPACE_ADD: 'workspace:add',
   WORKSPACE_RENAME: 'workspace:rename',
@@ -58,7 +61,9 @@ const electronAPI = {
   revealInFinder: (id: string) => ipcRenderer.invoke(IPC.DOCUMENTS_REVEAL_IN_FINDER, id),
   getDocumentCounts: () => ipcRenderer.invoke(IPC.DOCUMENTS_GET_COUNTS),
   openFilePicker: () => ipcRenderer.invoke(IPC.DOCUMENTS_OPEN_FILE_PICKER),
+  openFolderPicker: () => ipcRenderer.invoke(IPC.DOCUMENTS_OPEN_FOLDER_PICKER),
   getDocumentProtocolUrl: (id: string) => ipcRenderer.invoke(IPC.DOCUMENTS_GET_PROTOCOL_URL, id),
+  readDocumentFile: (id: string) => ipcRenderer.invoke(IPC.DOCUMENTS_READ_FILE, id),
   openDocumentExternally: (id: string) => ipcRenderer.invoke(IPC.DOCUMENTS_OPEN_EXTERNALLY, id),
 
   // Watcher
@@ -86,6 +91,11 @@ const electronAPI = {
     const handler = () => callback();
     ipcRenderer.on(IPC.MENU_IMPORT_FILES, handler);
     return () => ipcRenderer.removeListener(IPC.MENU_IMPORT_FILES, handler);
+  },
+  onMenuImportFolder: (callback: () => void) => {
+    const handler = () => callback();
+    ipcRenderer.on(IPC.MENU_IMPORT_FOLDER, handler);
+    return () => ipcRenderer.removeListener(IPC.MENU_IMPORT_FOLDER, handler);
   },
 
   // Workspaces
