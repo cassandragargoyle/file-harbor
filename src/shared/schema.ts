@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real, index } from 'drizzle-orm/sqlite-core';
 
 export const documents = sqliteTable(
   'documents',
@@ -14,6 +14,10 @@ export const documents = sqliteTable(
     category: text('category'),
     content_hash: text('content_hash').notNull(),
     extracted_text: text('extracted_text'),
+    suggested_category: text('suggested_category'),
+    suggestion_confidence: real('suggestion_confidence'),
+    suggestion_source: text('suggestion_source'),
+    suggested_filename: text('suggested_filename'),
     updated_at: text('updated_at').notNull(),
   },
   (table) => [

@@ -7,7 +7,7 @@ import { DatabaseService } from './services/database';
 import { PdfExtractor } from './services/pdf-extractor';
 import { WatcherService } from './services/watcher-service';
 import { IPC_CHANNELS } from './ipc-channels';
-import { registerIpcHandlers } from './ipc-handlers';
+import { registerIpcHandlers, runSuggestions } from './ipc-handlers';
 import { loadSettings, updateSettings, getActiveWorkspace, updateWorkspace } from './lib/settings';
 import { validateLibrary } from './lib/library-manager';
 import { mainLog } from './lib/logger';
@@ -42,7 +42,9 @@ function initializeLibraryServices(workspace: Workspace): void {
     appState.libraryPath = workspace.libraryPath;
     appState.activeWorkspaceId = workspace.id;
     appState.db = new DatabaseService(workspace.libraryPath);
-    appState.pdfExtractor = new PdfExtractor(appState.db);
+    appState.pdfExtractor = new PdfExtractor(appState.db, (documentId) => {
+      runSuggestions(appState, documentId);
+    });
     appState.watcher = new WatcherService(
       appState,
       (doc) => {

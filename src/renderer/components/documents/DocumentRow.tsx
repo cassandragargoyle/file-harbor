@@ -1,5 +1,5 @@
-import { FileText, Image, File, FolderInput, Download, ExternalLink, FolderSearch, Trash2 } from 'lucide-react';
-import type { DocumentRecord } from '../../../shared/types';
+import { FileText, Image, File, FolderInput, Download, ExternalLink, FolderSearch, Trash2, Check, X, Sparkles, Pencil } from 'lucide-react';
+import type { DocumentRecord, Category } from '../../../shared/types';
 import { relativeTime } from '../../lib/format';
 import { cn } from '../../lib/utils';
 
@@ -19,7 +19,10 @@ export function DocumentRow({
   onExport,
   onOpen,
   onReveal,
+  onRename,
   onDelete,
+  onAcceptSuggestion,
+  onDismissSuggestion,
 }: {
   document: DocumentRecord;
   selected: boolean;
@@ -30,11 +33,19 @@ export function DocumentRow({
   onExport?: () => void;
   onOpen?: () => void;
   onReveal?: () => void;
+  onRename?: () => void;
   onDelete?: () => void;
+  onAcceptSuggestion?: () => void;
+  onDismissSuggestion?: () => void;
 }) {
   const Icon = getFileIcon(document.mime_type);
 
   const actionVisibility = selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100';
+
+  const hasSuggestion =
+    document.suggested_category &&
+    document.category === null &&
+    (document.suggestion_confidence ?? 0) >= 0.3;
 
   return (
     <button
@@ -56,16 +67,29 @@ export function DocumentRow({
         <p className="truncate text-sm font-medium text-secondary">
           {document.original_filename}
         </p>
-        <p className="mt-0.5 text-xs text-faint">
-          {relativeTime(document.added_at)}
-          {document.category && (
-            <span className="ml-2 text-dim">&middot; {document.category}</span>
+        <div className="mt-0.5 flex items-center gap-2">
+          <span className="text-xs text-faint">
+            {relativeTime(document.added_at)}
+            {document.category && (
+              <span className="ml-2 text-dim">&middot; {document.category}</span>
+            )}
+          </span>
+          {hasSuggestion && (
+            <SuggestionChip
+              category={document.suggested_category!}
+              confidence={document.suggestion_confidence!}
+              onAccept={onAcceptSuggestion}
+              onDismiss={onDismissSuggestion}
+            />
           )}
-        </p>
+        </div>
       </div>
       <div className={cn('flex shrink-0 items-center gap-0.5 transition-opacity', actionVisibility)}>
         {onFile && (
           <RowAction icon={FolderInput} label="File to..." onClick={onFile} />
+        )}
+        {onRename && (
+          <RowAction icon={Pencil} label="Rename" onClick={onRename} />
         )}
         {onExport && (
           <RowAction icon={Download} label="Export" onClick={onExport} />
@@ -81,6 +105,55 @@ export function DocumentRow({
         )}
       </div>
     </button>
+  );
+}
+
+function SuggestionChip({
+  category,
+  confidence,
+  onAccept,
+  onDismiss,
+}: {
+  category: Category;
+  confidence: number;
+  onAccept?: () => void;
+  onDismiss?: () => void;
+}) {
+  const isUncertain = confidence < 0.7;
+
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2 py-0.5 text-[11px] font-medium text-accent">
+      <Sparkles className="h-3 w-3" />
+      {category}{isUncertain ? '?' : ''}
+      {onAccept && (
+        <span
+          role="button"
+          tabIndex={-1}
+          title="Accept suggestion"
+          onClick={(e) => {
+            e.stopPropagation();
+            onAccept();
+          }}
+          className="ml-0.5 rounded p-0.5 transition-colors hover:bg-accent/20"
+        >
+          <Check className="h-3 w-3" />
+        </span>
+      )}
+      {onDismiss && (
+        <span
+          role="button"
+          tabIndex={-1}
+          title="Dismiss suggestion"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDismiss();
+          }}
+          className="rounded p-0.5 transition-colors hover:bg-accent/20"
+        >
+          <X className="h-3 w-3" />
+        </span>
+      )}
+    </span>
   );
 }
 

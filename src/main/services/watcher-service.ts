@@ -11,6 +11,8 @@ import {
   discardTemp,
   getAbsolutePath,
 } from './file-service';
+import { suggestCategory } from './keyword-matcher';
+import { suggestFilename } from './filename-suggester';
 import { watcherLog } from '../lib/logger';
 
 const IGNORED_PATTERNS = [
@@ -111,11 +113,32 @@ export class WatcherService {
         category: null,
         content_hash: tempResult.contentHash,
         extracted_text: null,
+        suggested_category: null,
+        suggestion_confidence: null,
+        suggestion_source: null,
+        suggested_filename: null,
       });
 
       if (tempResult.mimeType === 'application/pdf' && pdfExtractor) {
         const absPath = getAbsolutePath(libraryPath, storedPath);
         pdfExtractor.queueExtraction(absPath, doc.id);
+      }
+
+      // Run keyword suggestions
+      const categorySuggestion = suggestCategory(doc.extracted_text, doc.original_filename);
+      const filenameSuggestion = suggestFilename(
+        doc.extracted_text,
+        doc.original_filename,
+        categorySuggestion?.category ?? null
+      );
+      if (categorySuggestion || filenameSuggestion) {
+        db.updateSuggestion(
+          doc.id,
+          categorySuggestion?.category ?? null,
+          categorySuggestion?.confidence ?? null,
+          categorySuggestion ? 'keywords' : null,
+          filenameSuggestion
+        );
       }
 
       this.onFileIngested(doc);

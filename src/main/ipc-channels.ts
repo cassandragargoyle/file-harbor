@@ -22,6 +22,13 @@ export const IPC_CHANNELS = {
   DOCUMENTS_READ_FILE: 'documents:read-file',
   DOCUMENTS_OPEN_EXTERNALLY: 'documents:open-externally',
 
+  // Suggestions
+  DOCUMENTS_GET_SUGGESTION: 'documents:get-suggestion',
+  DOCUMENTS_ACCEPT_SUGGESTION: 'documents:accept-suggestion',
+  DOCUMENTS_DISMISS_SUGGESTION: 'documents:dismiss-suggestion',
+  DOCUMENTS_ACCEPT_RENAME_SUGGESTION: 'documents:accept-rename-suggestion',
+  DOCUMENTS_SUGGEST_FILENAME: 'documents:suggest-filename',
+
   // Watcher
   WATCHER_SET_FOLDER: 'watcher:set-folder',
   WATCHER_GET_FOLDER: 'watcher:get-folder',
@@ -41,6 +48,14 @@ export const IPC_CHANNELS = {
   // Menu events (main -> renderer)
   MENU_IMPORT_FILES: 'menu:import-files',
   MENU_IMPORT_FOLDER: 'menu:import-folder',
+
+  // Ollama
+  OLLAMA_CHECK_STATUS: 'ollama:check-status',
+  OLLAMA_GET_SETTINGS: 'ollama:get-settings',
+  OLLAMA_UPDATE_SETTINGS: 'ollama:update-settings',
+
+  // Ollama events (main -> renderer)
+  DOCUMENTS_SUGGESTION_UPDATED: 'documents:suggestion-updated',
 
   // Settings
   SETTINGS_GET: 'settings:get',

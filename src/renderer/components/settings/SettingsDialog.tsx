@@ -3,6 +3,7 @@ import { X, FolderOpen, Trash2 } from 'lucide-react';
 import * as ipc from '../../lib/ipc';
 import { useAppStore } from '../../stores/app-store';
 import { formatBytes } from '../../lib/format';
+import { OllamaSettings } from './OllamaSettings';
 import type { LibraryInfo } from '../../../shared/types';
 
 export function SettingsDialog({ onClose }: { onClose: () => void }) {
@@ -28,7 +29,7 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-lg rounded-xl border border-border bg-base p-6 shadow-2xl">
+      <div className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-xl border border-border bg-base p-6 shadow-2xl">
         <div className="mb-6 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-foreground">Settings</h2>
           <button
@@ -73,8 +74,11 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
           </div>
         </section>
 
+        {/* AI Suggestions section */}
+        <OllamaSettings />
+
         {/* Watched folder section */}
-        <section>
+        <section className="mt-6">
           <h3 className="mb-3 text-sm font-medium text-muted">Watched Folder</h3>
           <div className="space-y-3 rounded-lg border border-border bg-surface/50 p-4">
             <div>

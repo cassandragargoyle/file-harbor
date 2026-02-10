@@ -4,6 +4,22 @@ import fs from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import type { Workspace } from '../../shared/types';
 
+export interface OllamaSettings {
+  ollamaEnabled: boolean;
+  ollamaBaseUrl: string;
+  ollamaModel: string;
+  suggestionConfidenceThreshold: number;
+  ollamaNudgeShown: boolean;
+}
+
+export const DEFAULT_OLLAMA_SETTINGS: OllamaSettings = {
+  ollamaEnabled: false,
+  ollamaBaseUrl: 'http://localhost:11434',
+  ollamaModel: 'phi3:mini',
+  suggestionConfidenceThreshold: 0.7,
+  ollamaNudgeShown: false,
+};
+
 export interface AppSettings {
   version: 2;
   workspaces: Workspace[];
@@ -15,6 +31,7 @@ export interface AppSettings {
     height: number;
   };
   lastView?: string;
+  ollama?: Partial<OllamaSettings>;
 }
 
 interface LegacySettings {
@@ -90,4 +107,15 @@ export function updateWorkspace(workspaceId: string, partial: Partial<Workspace>
     settings.workspaces[idx] = { ...settings.workspaces[idx], ...partial };
     saveSettings(settings);
   }
+}
+
+export function getOllamaSettings(): OllamaSettings {
+  const settings = loadSettings();
+  return { ...DEFAULT_OLLAMA_SETTINGS, ...settings.ollama };
+}
+
+export function updateOllamaSettings(partial: Partial<OllamaSettings>): void {
+  const settings = loadSettings();
+  settings.ollama = { ...settings.ollama, ...partial };
+  saveSettings(settings);
 }

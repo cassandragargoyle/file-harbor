@@ -16,6 +16,7 @@ import {
   Zap,
   Mail,
   FolderOpen,
+  Sparkles,
 } from 'lucide-react';
 import type { Category } from '../../../shared/types';
 import { CATEGORIES } from '../../../shared/constants';
@@ -40,9 +41,10 @@ const CATEGORY_ICONS: Record<Category, React.ComponentType<{ className?: string 
 interface CategoryPickerProps {
   onSelect: (category: Category | null) => void;
   onClose: () => void;
+  suggestedCategory?: Category;
 }
 
-export function CategoryPicker({ onSelect, onClose }: CategoryPickerProps) {
+export function CategoryPicker({ onSelect, onClose, suggestedCategory }: CategoryPickerProps) {
   const backdropRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -88,6 +90,7 @@ export function CategoryPicker({ onSelect, onClose }: CategoryPickerProps) {
           <div className="mx-2 my-1 border-t border-border/50" />
           {CATEGORIES.map((cat) => {
             const Icon = CATEGORY_ICONS[cat];
+            const isSuggested = cat === suggestedCategory;
             return (
               <Command.Item
                 key={cat}
@@ -97,6 +100,12 @@ export function CategoryPicker({ onSelect, onClose }: CategoryPickerProps) {
               >
                 <Icon className="h-4 w-4 shrink-0 text-faint" />
                 {cat}
+                {isSuggested && (
+                  <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-accent/10 px-1.5 py-0.5 text-[10px] font-medium text-accent">
+                    <Sparkles className="h-2.5 w-2.5" />
+                    Suggested
+                  </span>
+                )}
               </Command.Item>
             );
           })}

@@ -1,4 +1,4 @@
-import type { DocumentRecord, Category, DocumentSource, IngestResult, LibraryInfo, DocumentCounts, Workspace } from '../shared/types';
+import type { DocumentRecord, Category, DocumentSource, SuggestionSource, IngestResult, LibraryInfo, DocumentCounts, Workspace } from '../shared/types';
 
 interface ElectronAPI {
   // Library
@@ -24,6 +24,18 @@ interface ElectronAPI {
   readDocumentFile: (id: string) => Promise<ArrayBuffer | null>;
   openDocumentExternally: (id: string) => Promise<void>;
 
+  // Suggestions
+  getDocumentSuggestion: (id: string) => Promise<{
+    suggested_category: Category | null;
+    suggestion_confidence: number | null;
+    suggestion_source: SuggestionSource | null;
+    suggested_filename: string | null;
+  } | null>;
+  acceptSuggestion: (id: string) => Promise<void>;
+  dismissSuggestion: (id: string) => Promise<void>;
+  acceptRenameSuggestion: (id: string) => Promise<void>;
+  suggestFilename: (id: string) => Promise<string | null>;
+
   // Watcher
   setWatchedFolder: () => Promise<string | null>;
   getWatchedFolder: () => Promise<string | null>;
@@ -46,6 +58,35 @@ interface ElectronAPI {
   switchWorkspace: (id: string) => Promise<{ success: boolean }>;
   getActiveWorkspaceId: () => Promise<string | null>;
   onWorkspaceSwitched: (callback: (workspaceId: string) => void) => () => void;
+
+  // Ollama
+  checkOllamaStatus: (baseUrl?: string) => Promise<{
+    reachable: boolean;
+    models: Array<{ name: string; size: number; modified_at: string }>;
+  }>;
+  getOllamaSettings: () => Promise<{
+    ollamaEnabled: boolean;
+    ollamaBaseUrl: string;
+    ollamaModel: string;
+    suggestionConfidenceThreshold: number;
+    ollamaNudgeShown: boolean;
+  } | null>;
+  updateOllamaSettings: (partial: Partial<{
+    ollamaEnabled: boolean;
+    ollamaBaseUrl: string;
+    ollamaModel: string;
+    suggestionConfidenceThreshold: number;
+    ollamaNudgeShown: boolean;
+  }>) => Promise<{
+    ollamaEnabled: boolean;
+    ollamaBaseUrl: string;
+    ollamaModel: string;
+    suggestionConfidenceThreshold: number;
+    ollamaNudgeShown: boolean;
+  } | null>;
+
+  // Suggestion events
+  onSuggestionUpdated: (callback: (documentId: string) => void) => () => void;
 
   // Settings
   getSettings: () => Promise<{

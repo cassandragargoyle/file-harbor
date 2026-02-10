@@ -16,6 +16,8 @@ export type Category =
   | 'Mail'
   | 'Other';
 
+export type SuggestionSource = 'keywords' | 'ollama';
+
 export interface DocumentRecord {
   id: string;
   original_filename: string;
@@ -28,6 +30,10 @@ export interface DocumentRecord {
   category: Category | null;
   content_hash: string;
   extracted_text: string | null;
+  suggested_category: Category | null;
+  suggestion_confidence: number | null;
+  suggestion_source: SuggestionSource | null;
+  suggested_filename: string | null;
   updated_at: string;
 }
 

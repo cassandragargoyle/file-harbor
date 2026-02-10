@@ -41,6 +41,13 @@ export const readDocumentFile = (id: string): Promise<ArrayBuffer | null> =>
   api.readDocumentFile(id);
 export const openDocumentExternally = (id: string) => api.openDocumentExternally(id);
 
+// Suggestions
+export const getDocumentSuggestion = (id: string) => api.getDocumentSuggestion(id);
+export const acceptSuggestion = (id: string) => api.acceptSuggestion(id);
+export const dismissSuggestion = (id: string) => api.dismissSuggestion(id);
+export const acceptRenameSuggestion = (id: string) => api.acceptRenameSuggestion(id);
+export const suggestFilename = (id: string): Promise<string | null> => api.suggestFilename(id);
+
 // Watcher
 export const setWatchedFolder = () => api.setWatchedFolder();
 export const getWatchedFolder = (): Promise<string | null> => api.getWatchedFolder();
@@ -64,6 +71,16 @@ export const removeWorkspace = (id: string) => api.removeWorkspace(id);
 export const switchWorkspace = (id: string) => api.switchWorkspace(id);
 export const getActiveWorkspaceId = (): Promise<string | null> => api.getActiveWorkspaceId();
 export const onWorkspaceSwitched = (cb: (id: string) => void) => api.onWorkspaceSwitched(cb);
+
+// Ollama
+export const checkOllamaStatus = (baseUrl?: string) => api.checkOllamaStatus(baseUrl);
+export const getOllamaSettings = () => api.getOllamaSettings();
+export const updateOllamaSettings = (partial: Parameters<typeof api.updateOllamaSettings>[0]) =>
+  api.updateOllamaSettings(partial);
+
+// Suggestion events
+export const onSuggestionUpdated = (cb: (documentId: string) => void) =>
+  api.onSuggestionUpdated(cb);
 
 // Settings
 export const getSettings = () => api.getSettings();

@@ -20,6 +20,11 @@ const IPC = {
   DOCUMENTS_GET_PROTOCOL_URL: 'documents:get-protocol-url',
   DOCUMENTS_READ_FILE: 'documents:read-file',
   DOCUMENTS_OPEN_EXTERNALLY: 'documents:open-externally',
+  DOCUMENTS_GET_SUGGESTION: 'documents:get-suggestion',
+  DOCUMENTS_ACCEPT_SUGGESTION: 'documents:accept-suggestion',
+  DOCUMENTS_DISMISS_SUGGESTION: 'documents:dismiss-suggestion',
+  DOCUMENTS_ACCEPT_RENAME_SUGGESTION: 'documents:accept-rename-suggestion',
+  DOCUMENTS_SUGGEST_FILENAME: 'documents:suggest-filename',
   WATCHER_SET_FOLDER: 'watcher:set-folder',
   WATCHER_GET_FOLDER: 'watcher:get-folder',
   WATCHER_CLEAR_FOLDER: 'watcher:clear-folder',
@@ -34,6 +39,10 @@ const IPC = {
   WORKSPACE_SWITCH: 'workspace:switch',
   WORKSPACE_GET_ACTIVE: 'workspace:get-active',
   WORKSPACE_SWITCHED: 'workspace:switched',
+  OLLAMA_CHECK_STATUS: 'ollama:check-status',
+  OLLAMA_GET_SETTINGS: 'ollama:get-settings',
+  OLLAMA_UPDATE_SETTINGS: 'ollama:update-settings',
+  DOCUMENTS_SUGGESTION_UPDATED: 'documents:suggestion-updated',
   SETTINGS_GET: 'settings:get',
   SETTINGS_SAVE_LAST_VIEW: 'settings:save-last-view',
 } as const;
@@ -65,6 +74,15 @@ const electronAPI = {
   getDocumentProtocolUrl: (id: string) => ipcRenderer.invoke(IPC.DOCUMENTS_GET_PROTOCOL_URL, id),
   readDocumentFile: (id: string) => ipcRenderer.invoke(IPC.DOCUMENTS_READ_FILE, id),
   openDocumentExternally: (id: string) => ipcRenderer.invoke(IPC.DOCUMENTS_OPEN_EXTERNALLY, id),
+
+  // Suggestions
+  getDocumentSuggestion: (id: string) => ipcRenderer.invoke(IPC.DOCUMENTS_GET_SUGGESTION, id),
+  acceptSuggestion: (id: string) => ipcRenderer.invoke(IPC.DOCUMENTS_ACCEPT_SUGGESTION, id),
+  dismissSuggestion: (id: string) => ipcRenderer.invoke(IPC.DOCUMENTS_DISMISS_SUGGESTION, id),
+  acceptRenameSuggestion: (id: string) =>
+    ipcRenderer.invoke(IPC.DOCUMENTS_ACCEPT_RENAME_SUGGESTION, id),
+  suggestFilename: (id: string) =>
+    ipcRenderer.invoke(IPC.DOCUMENTS_SUGGEST_FILENAME, id),
 
   // Watcher
   setWatchedFolder: () => ipcRenderer.invoke(IPC.WATCHER_SET_FOLDER),
@@ -111,6 +129,19 @@ const electronAPI = {
     const handler = (_event: Electron.IpcRendererEvent, id: string) => callback(id);
     ipcRenderer.on(IPC.WORKSPACE_SWITCHED, handler);
     return () => ipcRenderer.removeListener(IPC.WORKSPACE_SWITCHED, handler);
+  },
+
+  // Ollama
+  checkOllamaStatus: (baseUrl?: string) => ipcRenderer.invoke(IPC.OLLAMA_CHECK_STATUS, baseUrl),
+  getOllamaSettings: () => ipcRenderer.invoke(IPC.OLLAMA_GET_SETTINGS),
+  updateOllamaSettings: (partial: Record<string, unknown>) =>
+    ipcRenderer.invoke(IPC.OLLAMA_UPDATE_SETTINGS, partial),
+
+  // Suggestion events (return cleanup function)
+  onSuggestionUpdated: (callback: (documentId: string) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, documentId: string) => callback(documentId);
+    ipcRenderer.on(IPC.DOCUMENTS_SUGGESTION_UPDATED, handler);
+    return () => ipcRenderer.removeListener(IPC.DOCUMENTS_SUGGESTION_UPDATED, handler);
   },
 
   // Settings

@@ -1,7 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
+import { Sparkles, Loader2 } from 'lucide-react';
+import * as ipc from '../../lib/ipc';
 
 interface RenameDialogProps {
+  documentId: string;
   filename: string;
+  suggestedFilename?: string;
   onConfirm: (newFilename: string) => void;
   onCancel: () => void;
 }
@@ -12,9 +16,10 @@ function splitFilename(filename: string): { name: string; ext: string } {
   return { name: filename.slice(0, lastDot), ext: filename.slice(lastDot) };
 }
 
-export function RenameDialog({ filename, onConfirm, onCancel }: RenameDialogProps) {
+export function RenameDialog({ documentId, filename, suggestedFilename, onConfirm, onCancel }: RenameDialogProps) {
   const { name, ext } = splitFilename(filename);
   const [value, setValue] = useState(name);
+  const [suggesting, setSuggesting] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -26,6 +31,27 @@ export function RenameDialog({ filename, onConfirm, onCancel }: RenameDialogProp
 
   const handleSubmit = () => {
     if (canSubmit) onConfirm(trimmed + ext);
+  };
+
+  const handleApplySuggestion = () => {
+    if (!suggestedFilename) return;
+    const { name: suggestedName } = splitFilename(suggestedFilename);
+    setValue(suggestedName);
+    inputRef.current?.focus();
+  };
+
+  const handleSuggestName = async () => {
+    setSuggesting(true);
+    try {
+      const result = await ipc.suggestFilename(documentId);
+      if (result) {
+        const { name: suggestedName } = splitFilename(result);
+        setValue(suggestedName);
+        inputRef.current?.focus();
+      }
+    } finally {
+      setSuggesting(false);
+    }
   };
 
   return (
@@ -51,6 +77,32 @@ export function RenameDialog({ filename, onConfirm, onCancel }: RenameDialogProp
           />
           {ext && (
             <span className="shrink-0 pl-1.5 text-sm text-faint">{ext}</span>
+          )}
+        </div>
+        <div className="mt-2 flex items-center gap-2">
+          {suggestedFilename ? (
+            <button
+              type="button"
+              onClick={handleApplySuggestion}
+              className="inline-flex items-center gap-1.5 rounded-md bg-accent/10 px-2.5 py-1 text-xs font-medium text-accent transition-colors hover:bg-accent/20"
+            >
+              <Sparkles className="h-3 w-3" />
+              Apply suggestion
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleSuggestName}
+              disabled={suggesting}
+              className="inline-flex items-center gap-1.5 rounded-md bg-accent/10 px-2.5 py-1 text-xs font-medium text-accent transition-colors hover:bg-accent/20 disabled:opacity-50"
+            >
+              {suggesting ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Sparkles className="h-3 w-3" />
+              )}
+              Suggest name
+            </button>
           )}
         </div>
         <div className="mt-5 flex justify-end gap-2">

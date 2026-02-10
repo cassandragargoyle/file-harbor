@@ -92,7 +92,7 @@ export default function App() {
     }
   }, [loadDocuments, refreshCounts]);
 
-  // Subscribe to watcher and menu events
+  // Subscribe to watcher, menu, and suggestion events
   useEffect(() => {
     if (phase !== 'ready') return;
 
@@ -114,13 +114,51 @@ export default function App() {
       toast.error(message);
     });
 
+    // Listen for LLM suggestion updates (Phase 2)
+    const cleanupSuggestionUpdated = ipc.onSuggestionUpdated(() => {
+      loadDocuments();
+    });
+
+    // Ollama detection nudge (Phase 2) — one-time toast
+    ipc.getOllamaSettings().then(async (settings) => {
+      if (!settings || settings.ollamaEnabled || settings.ollamaNudgeShown) return;
+      const status = await ipc.checkOllamaStatus();
+      if (status.reachable) {
+        toast('Ollama detected — enable AI suggestions in Settings for smarter filing', {
+          duration: 8000,
+        });
+        ipc.updateOllamaSettings({ ollamaNudgeShown: true });
+      }
+    });
+
     return () => {
       cleanupWatcher();
       cleanupMenu();
       cleanupMenuFolder();
       cleanupWatcherError();
+      cleanupSuggestionUpdated();
     };
   }, [phase, loadDocuments, refreshCounts, handleImportAction, handleImportFolderAction]);
+
+  const handleAcceptSuggestion = useCallback(async (docId: string) => {
+    try {
+      await ipc.acceptSuggestion(docId);
+      toast.success('Suggestion accepted');
+      await loadDocuments();
+      await refreshCounts();
+    } catch {
+      toast.error('Failed to accept suggestion');
+    }
+  }, [loadDocuments, refreshCounts]);
+
+  const handleDismissSuggestion = useCallback(async (docId: string) => {
+    try {
+      await ipc.dismissSuggestion(docId);
+      await loadDocuments();
+    } catch {
+      toast.error('Failed to dismiss suggestion');
+    }
+  }, [loadDocuments]);
 
   const handleCategorySelect = useCallback(async (category: Category | null) => {
     if (!categoryPickerDocId) return;
@@ -231,7 +269,10 @@ export default function App() {
             onExport={(docId) => ipc.exportDocument(docId)}
             onOpen={(docId) => ipc.openDocumentExternally(docId)}
             onReveal={(docId) => ipc.revealInFinder(docId)}
+            onRename={handleRenameAction}
             onDelete={handleDeleteAction}
+            onAcceptSuggestion={handleAcceptSuggestion}
+            onDismissSuggestion={handleDismissSuggestion}
           />
         </div>
       </div>
@@ -242,6 +283,7 @@ export default function App() {
         <CategoryPicker
           onSelect={handleCategorySelect}
           onClose={() => setCategoryPickerDocId(null)}
+          suggestedCategory={documents.find((d) => d.id === categoryPickerDocId)?.suggested_category ?? undefined}
         />
       )}
 
@@ -256,9 +298,11 @@ export default function App() {
       )}
 
       {/* Rename dialog */}
-      {renameDoc && (
+      {renameDoc && renameDocId && (
         <RenameDialog
+          documentId={renameDocId}
           filename={renameDoc.original_filename}
+          suggestedFilename={renameDoc.suggested_filename ?? undefined}
           onConfirm={handleRenameConfirm}
           onCancel={() => setRenameDocId(null)}
         />

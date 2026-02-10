@@ -7,7 +7,7 @@ import path from 'node:path';
 
 import * as schema from '../../shared/schema';
 import { CATEGORIES } from '../../shared/constants';
-import type { DocumentRecord, Category, DocumentCounts, LibraryInfo } from '../../shared/types';
+import type { DocumentRecord, Category, SuggestionSource, DocumentCounts, LibraryInfo } from '../../shared/types';
 import { dbLog } from '../lib/logger';
 
 export class DatabaseService {
@@ -90,6 +90,40 @@ export class DatabaseService {
   deleteDocument(id: string): void {
     this.db
       .delete(schema.documents)
+      .where(eq(schema.documents.id, id))
+      .run();
+  }
+
+  updateSuggestion(
+    id: string,
+    suggestedCategory: Category | null,
+    confidence: number | null,
+    source: SuggestionSource | null,
+    suggestedFilename: string | null
+  ): void {
+    this.db
+      .update(schema.documents)
+      .set({
+        suggested_category: suggestedCategory,
+        suggestion_confidence: confidence,
+        suggestion_source: source,
+        suggested_filename: suggestedFilename,
+        updated_at: new Date().toISOString(),
+      })
+      .where(eq(schema.documents.id, id))
+      .run();
+  }
+
+  clearSuggestion(id: string): void {
+    this.db
+      .update(schema.documents)
+      .set({
+        suggested_category: null,
+        suggestion_confidence: null,
+        suggestion_source: null,
+        suggested_filename: null,
+        updated_at: new Date().toISOString(),
+      })
       .where(eq(schema.documents.id, id))
       .run();
   }

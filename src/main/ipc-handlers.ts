@@ -21,10 +21,15 @@ import {
   validateLibrary,
   getDefaultLibraryPath,
 } from './lib/library-manager';
-import { loadSettings, saveSettings, updateWorkspace } from './lib/settings';
+import { loadSettings, saveSettings, updateWorkspace, getOllamaSettings, updateOllamaSettings } from './lib/settings';
+import type { OllamaSettings } from './lib/settings';
 import { ACCEPTED_EXTENSIONS } from '../shared/constants';
 import type { Category, DocumentSource, IngestResult, Workspace } from '../shared/types';
-import { ipcLog } from './lib/logger';
+import { suggestCategory } from './services/keyword-matcher';
+import { suggestFilename } from './services/filename-suggester';
+import { checkOllamaStatus } from './services/ollama-service';
+import { suggestWithLlm } from './services/llm-suggester';
+import { ipcLog, ollamaLog } from './lib/logger';
 
 interface AppState {
   db: DatabaseService | null;
@@ -38,6 +43,65 @@ interface LibraryCallbacks {
   initializeServices: (workspace: Workspace) => void;
   teardownServices: () => Promise<void>;
   switchWorkspace: (workspaceId: string) => Promise<boolean>;
+}
+
+export function runSuggestions(state: AppState, documentId: string): void {
+  if (!state.db) return;
+  const doc = state.db.getDocument(documentId);
+  if (!doc || doc.category !== null) return; // only suggest for inbox docs
+
+  const categorySuggestion = suggestCategory(doc.extracted_text, doc.original_filename);
+  const filenameSuggestion = suggestFilename(
+    doc.extracted_text,
+    doc.original_filename,
+    categorySuggestion?.category ?? null
+  );
+
+  if (categorySuggestion || filenameSuggestion) {
+    state.db.updateSuggestion(
+      documentId,
+      categorySuggestion?.category ?? null,
+      categorySuggestion?.confidence ?? null,
+      categorySuggestion ? 'keywords' : null,
+      filenameSuggestion
+    );
+  }
+
+  // Phase 2: Confidence-based LLM routing
+  const ollamaSettings = getOllamaSettings();
+  const keywordConfidence = categorySuggestion?.confidence ?? 0;
+  if (ollamaSettings.ollamaEnabled && keywordConfidence < ollamaSettings.suggestionConfidenceThreshold) {
+    // Queue async LLM suggestion — don't block the import flow
+    runLlmSuggestion(state, documentId).catch((err) => {
+      ollamaLog.warn(`LLM suggestion failed for ${documentId}:`, err);
+    });
+  }
+}
+
+async function runLlmSuggestion(state: AppState, documentId: string): Promise<void> {
+  if (!state.db) return;
+  const doc = state.db.getDocument(documentId);
+  if (!doc || doc.category !== null) return;
+
+  const result = await suggestWithLlm(doc.extracted_text, doc.original_filename);
+  if (!result) return;
+
+  // Re-check: document may have been filed while LLM was thinking
+  const current = state.db.getDocument(documentId);
+  if (!current || current.category !== null) return;
+
+  state.db.updateSuggestion(
+    documentId,
+    result.category,
+    result.confidence,
+    result.source,
+    result.filename
+  );
+
+  // Notify all renderer windows that this document's suggestion was updated
+  BrowserWindow.getAllWindows().forEach((w) => {
+    w.webContents.send(IPC_CHANNELS.DOCUMENTS_SUGGESTION_UPDATED, documentId);
+  });
 }
 
 export function registerIpcHandlers(
@@ -162,6 +226,10 @@ export function registerIpcHandlers(
             category: null,
             content_hash: tempResult.contentHash,
             extracted_text: null,
+            suggested_category: null,
+            suggestion_confidence: null,
+            suggestion_source: null,
+            suggested_filename: null,
           });
 
           results.push({ path: filePath, status: 'success', documentId: doc.id });
@@ -171,6 +239,9 @@ export function registerIpcHandlers(
             const absPath = getAbsolutePath(state.libraryPath, storedPath);
             state.pdfExtractor.queueExtraction(absPath, doc.id);
           }
+
+          // Step 6: Run keyword suggestions on filename (text not yet available for PDFs)
+          runSuggestions(state, doc.id);
         } catch (err) {
           ipcLog.error(`Failed to ingest ${filePath}:`, err);
           results.push({
@@ -373,6 +444,103 @@ export function registerIpcHandlers(
     }
   });
 
+  // ── Suggestions ──────────────────────────────────────────────
+
+  ipcMain.handle(IPC_CHANNELS.DOCUMENTS_GET_SUGGESTION, (_event, id: string) => {
+    try {
+      if (!state.db) return null;
+      const doc = state.db.getDocument(id);
+      if (!doc) return null;
+      return {
+        suggested_category: doc.suggested_category,
+        suggestion_confidence: doc.suggestion_confidence,
+        suggestion_source: doc.suggestion_source,
+        suggested_filename: doc.suggested_filename,
+      };
+    } catch (err) {
+      ipcLog.error('DOCUMENTS_GET_SUGGESTION failed:', err);
+      return null;
+    }
+  });
+
+  ipcMain.handle(
+    IPC_CHANNELS.DOCUMENTS_ACCEPT_SUGGESTION,
+    (_event, id: string) => {
+      try {
+        if (!state.db) return;
+        const doc = state.db.getDocument(id);
+        if (!doc?.suggested_category) return;
+        state.db.updateDocumentCategory(id, doc.suggested_category);
+        state.db.clearSuggestion(id);
+      } catch (err) {
+        ipcLog.error('DOCUMENTS_ACCEPT_SUGGESTION failed:', err);
+      }
+    }
+  );
+
+  ipcMain.handle(
+    IPC_CHANNELS.DOCUMENTS_DISMISS_SUGGESTION,
+    (_event, id: string) => {
+      try {
+        if (!state.db) return;
+        state.db.clearSuggestion(id);
+      } catch (err) {
+        ipcLog.error('DOCUMENTS_DISMISS_SUGGESTION failed:', err);
+      }
+    }
+  );
+
+  ipcMain.handle(
+    IPC_CHANNELS.DOCUMENTS_ACCEPT_RENAME_SUGGESTION,
+    (_event, id: string) => {
+      try {
+        if (!state.db) return;
+        const doc = state.db.getDocument(id);
+        if (!doc?.suggested_filename) return;
+        state.db.renameDocument(id, doc.suggested_filename);
+        state.db.updateSuggestion(
+          id,
+          doc.suggested_category,
+          doc.suggestion_confidence,
+          doc.suggestion_source as 'keywords' | 'ollama' | null,
+          null // clear the filename suggestion
+        );
+      } catch (err) {
+        ipcLog.error('DOCUMENTS_ACCEPT_RENAME_SUGGESTION failed:', err);
+      }
+    }
+  );
+
+  ipcMain.handle(
+    IPC_CHANNELS.DOCUMENTS_SUGGEST_FILENAME,
+    async (_event, id: string) => {
+      try {
+        if (!state.db) return null;
+        const doc = state.db.getDocument(id);
+        if (!doc) return null;
+
+        // Try LLM first if enabled
+        const ollamaSettings = getOllamaSettings();
+        if (ollamaSettings.ollamaEnabled) {
+          const llmResult = await suggestWithLlm(doc.extracted_text, doc.original_filename);
+          if (llmResult?.filename) return llmResult.filename;
+        }
+
+        // Fall back to keyword-based filename suggestion
+        const categorySuggestion = suggestCategory(doc.extracted_text, doc.original_filename);
+        const result = suggestFilename(
+          doc.extracted_text,
+          doc.original_filename,
+          categorySuggestion?.category ?? doc.suggested_category ?? doc.category
+        );
+        return result;
+      } catch (err) {
+        ipcLog.error('DOCUMENTS_SUGGEST_FILENAME failed:', err);
+        return null;
+      }
+    }
+  );
+
   // ── Workspaces ──────────────────────────────────────────────
 
   ipcMain.handle(IPC_CHANNELS.WORKSPACE_LIST, () => {
@@ -492,6 +660,39 @@ export function registerIpcHandlers(
       ipcLog.error('WATCHER_CLEAR_FOLDER failed:', err);
     }
   });
+
+  // ── Ollama ──────────────────────────────────────────────────
+
+  ipcMain.handle(IPC_CHANNELS.OLLAMA_CHECK_STATUS, async (_event, baseUrl?: string) => {
+    try {
+      return await checkOllamaStatus(baseUrl);
+    } catch (err) {
+      ipcLog.error('OLLAMA_CHECK_STATUS failed:', err);
+      return { reachable: false, models: [] };
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.OLLAMA_GET_SETTINGS, () => {
+    try {
+      return getOllamaSettings();
+    } catch (err) {
+      ipcLog.error('OLLAMA_GET_SETTINGS failed:', err);
+      return null;
+    }
+  });
+
+  ipcMain.handle(
+    IPC_CHANNELS.OLLAMA_UPDATE_SETTINGS,
+    (_event, partial: Partial<OllamaSettings>) => {
+      try {
+        updateOllamaSettings(partial);
+        return getOllamaSettings();
+      } catch (err) {
+        ipcLog.error('OLLAMA_UPDATE_SETTINGS failed:', err);
+        return null;
+      }
+    }
+  );
 
   // ── Settings ──────────────────────────────────────────────────
 

@@ -9,10 +9,13 @@ interface MainContentProps {
   onExport?: (docId: string) => void;
   onOpen?: (docId: string) => void;
   onReveal?: (docId: string) => void;
+  onRename?: (docId: string) => void;
   onDelete?: (docId: string) => void;
+  onAcceptSuggestion?: (docId: string) => void;
+  onDismissSuggestion?: (docId: string) => void;
 }
 
-export function MainContent({ onContextMenu, onFile, onExport, onOpen, onReveal, onDelete }: MainContentProps) {
+export function MainContent({ onContextMenu, onFile, onExport, onOpen, onReveal, onRename, onDelete, onAcceptSuggestion, onDismissSuggestion }: MainContentProps) {
   const currentView = useAppStore((s) => s.currentView);
   const documents = useAppStore((s) => s.documents);
   const sortBy = useAppStore((s) => s.sortBy);
@@ -78,7 +81,10 @@ export function MainContent({ onContextMenu, onFile, onExport, onOpen, onReveal,
           onExport={onExport}
           onOpen={onOpen}
           onReveal={onReveal}
+          onRename={onRename}
           onDelete={onDelete}
+          onAcceptSuggestion={onAcceptSuggestion}
+          onDismissSuggestion={onDismissSuggestion}
         />
       </div>
 

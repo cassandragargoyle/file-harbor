@@ -26,6 +26,10 @@ function makeTestDoc(
     category: null,
     content_hash: randomUUID(),
     extracted_text: null,
+    suggested_category: null,
+    suggestion_confidence: null,
+    suggestion_source: null,
+    suggested_filename: null,
     ...overrides,
   };
 }

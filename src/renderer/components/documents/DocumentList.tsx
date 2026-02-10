@@ -9,10 +9,13 @@ interface DocumentListProps {
   onExport?: (docId: string) => void;
   onOpen?: (docId: string) => void;
   onReveal?: (docId: string) => void;
+  onRename?: (docId: string) => void;
   onDelete?: (docId: string) => void;
+  onAcceptSuggestion?: (docId: string) => void;
+  onDismissSuggestion?: (docId: string) => void;
 }
 
-export function DocumentList({ onContextMenu, onDoubleClick, onFile, onExport, onOpen, onReveal, onDelete }: DocumentListProps) {
+export function DocumentList({ onContextMenu, onDoubleClick, onFile, onExport, onOpen, onReveal, onRename, onDelete, onAcceptSuggestion, onDismissSuggestion }: DocumentListProps) {
   const documents = useAppStore((s) => s.documents);
   const selectedDocumentId = useAppStore((s) => s.selectedDocumentId);
   const setSelectedDocument = useAppStore((s) => s.setSelectedDocument);
@@ -76,7 +79,10 @@ export function DocumentList({ onContextMenu, onDoubleClick, onFile, onExport, o
           onExport={onExport ? () => onExport(doc.id) : undefined}
           onOpen={onOpen ? () => onOpen(doc.id) : undefined}
           onReveal={onReveal ? () => onReveal(doc.id) : undefined}
+          onRename={onRename ? () => onRename(doc.id) : undefined}
           onDelete={onDelete ? () => onDelete(doc.id) : undefined}
+          onAcceptSuggestion={onAcceptSuggestion ? () => onAcceptSuggestion(doc.id) : undefined}
+          onDismissSuggestion={onDismissSuggestion ? () => onDismissSuggestion(doc.id) : undefined}
         />
       ))}
     </div>
