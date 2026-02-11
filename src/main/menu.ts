@@ -54,6 +54,21 @@ export function buildAppMenu(getLibraryPath: () => string | null): void {
           },
         },
         { type: 'separator' },
+        {
+          label: 'Back Up Workspace...',
+          click: () => {
+            const win = BrowserWindow.getFocusedWindow();
+            if (win) win.webContents.send(IPC_CHANNELS.MENU_BACKUP);
+          },
+        },
+        {
+          label: 'Restore from Backup...',
+          click: () => {
+            const win = BrowserWindow.getFocusedWindow();
+            if (win) win.webContents.send(IPC_CHANNELS.MENU_RESTORE);
+          },
+        },
+        { type: 'separator' },
         isMac ? { role: 'close' as const } : { role: 'quit' as const },
       ],
     },

@@ -72,3 +72,24 @@ export interface DocumentCounts {
   inbox: number;
   [category: string]: number;
 }
+
+export interface BackupMeta {
+  version: number;
+  createdAt: string;
+  appVersion: string;
+  documentCount: number;
+  totalSizeBytes: number;
+}
+
+export interface BackupResult {
+  success: boolean;
+  path?: string;
+  meta?: BackupMeta;
+  error?: string;
+}
+
+export interface RestoreResult {
+  success: boolean;
+  meta?: BackupMeta;
+  error?: string;
+}

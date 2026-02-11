@@ -244,6 +244,10 @@ export class DatabaseService {
     };
   }
 
+  walCheckpoint(): void {
+    this.sqlite.pragma('wal_checkpoint(TRUNCATE)');
+  }
+
   close(): void {
     this.sqlite.close();
     dbLog.info('Database connection closed');

@@ -48,9 +48,15 @@ export const IPC_CHANNELS = {
   WORKSPACE_GET_ACTIVE: 'workspace:get-active',
   WORKSPACE_SWITCHED: 'workspace:switched',
 
+  // Backup
+  WORKSPACE_BACKUP: 'workspace:backup',
+  WORKSPACE_RESTORE: 'workspace:restore',
+
   // Menu events (main -> renderer)
   MENU_IMPORT_FILES: 'menu:import-files',
   MENU_IMPORT_FOLDER: 'menu:import-folder',
+  MENU_BACKUP: 'menu:backup',
+  MENU_RESTORE: 'menu:restore',
 
   // Ollama
   OLLAMA_CHECK_STATUS: 'ollama:check-status',

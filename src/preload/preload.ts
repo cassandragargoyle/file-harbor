@@ -35,6 +35,10 @@ const IPC = {
   WATCHER_ERROR: 'watcher:error',
   MENU_IMPORT_FILES: 'menu:import-files',
   MENU_IMPORT_FOLDER: 'menu:import-folder',
+  MENU_BACKUP: 'menu:backup',
+  MENU_RESTORE: 'menu:restore',
+  WORKSPACE_BACKUP: 'workspace:backup',
+  WORKSPACE_RESTORE: 'workspace:restore',
   WORKSPACE_LIST: 'workspace:list',
   WORKSPACE_ADD: 'workspace:add',
   WORKSPACE_RENAME: 'workspace:rename',
@@ -123,6 +127,20 @@ const electronAPI = {
     const handler = () => callback();
     ipcRenderer.on(IPC.MENU_IMPORT_FOLDER, handler);
     return () => ipcRenderer.removeListener(IPC.MENU_IMPORT_FOLDER, handler);
+  },
+
+  // Backup
+  backupWorkspace: () => ipcRenderer.invoke(IPC.WORKSPACE_BACKUP),
+  restoreWorkspace: () => ipcRenderer.invoke(IPC.WORKSPACE_RESTORE),
+  onMenuBackup: (callback: () => void) => {
+    const handler = () => callback();
+    ipcRenderer.on(IPC.MENU_BACKUP, handler);
+    return () => ipcRenderer.removeListener(IPC.MENU_BACKUP, handler);
+  },
+  onMenuRestore: (callback: () => void) => {
+    const handler = () => callback();
+    ipcRenderer.on(IPC.MENU_RESTORE, handler);
+    return () => ipcRenderer.removeListener(IPC.MENU_RESTORE, handler);
   },
 
   // Workspaces

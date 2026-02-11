@@ -116,6 +116,26 @@ export default function App() {
       toast.error(message);
     });
 
+    const cleanupMenuBackup = ipc.onMenuBackup(async () => {
+      const result = await ipc.backupWorkspace();
+      if (result.success && result.meta) {
+        toast.success(`Backup created — ${result.meta.documentCount} documents`);
+      } else if (result.error) {
+        toast.error(`Backup failed: ${result.error}`);
+      }
+    });
+
+    const cleanupMenuRestore = ipc.onMenuRestore(async () => {
+      const result = await ipc.restoreWorkspace();
+      if (result.success && result.meta) {
+        toast.success(`Restored ${result.meta.documentCount} documents from backup`);
+        await loadDocuments();
+        await refreshCounts();
+      } else if (result.error) {
+        toast.error(`Restore failed: ${result.error}`);
+      }
+    });
+
     // Listen for LLM suggestion updates (Phase 2)
     const cleanupSuggestionUpdated = ipc.onSuggestionUpdated(() => {
       loadDocuments();
@@ -137,6 +157,8 @@ export default function App() {
       cleanupWatcher();
       cleanupMenu();
       cleanupMenuFolder();
+      cleanupMenuBackup();
+      cleanupMenuRestore();
       cleanupWatcherError();
       cleanupSuggestionUpdated();
     };

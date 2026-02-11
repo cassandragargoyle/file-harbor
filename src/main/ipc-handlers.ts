@@ -1,4 +1,4 @@
-import { ipcMain, dialog, shell, BrowserWindow } from 'electron';
+import { app, ipcMain, dialog, shell, BrowserWindow } from 'electron';
 import path from 'node:path';
 import fsp from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
@@ -21,6 +21,7 @@ import {
   validateLibrary,
   getDefaultLibraryPath,
 } from './lib/library-manager';
+import { createBackup, validateBackup, restoreBackup } from './services/backup-service';
 import { loadSettings, saveSettings, updateWorkspace, getOllamaSettings, updateOllamaSettings } from './lib/settings';
 import type { OllamaSettings } from './lib/settings';
 import { ACCEPTED_EXTENSIONS, MAX_EXTRACTED_TEXT_LENGTH } from '../shared/constants';
@@ -665,6 +666,114 @@ export function registerIpcHandlers(
     } catch (err) {
       ipcLog.error('WORKSPACE_SWITCH failed:', err);
       return { success: false };
+    }
+  });
+
+  // ── Backup & Restore ────────────────────────────────────────
+
+  ipcMain.handle(IPC_CHANNELS.WORKSPACE_BACKUP, async () => {
+    try {
+      if (!state.db || !state.libraryPath) {
+        return { success: false, error: 'No workspace open' };
+      }
+
+      // Get workspace name for folder naming
+      const settings = loadSettings();
+      const workspace = settings.workspaces.find((w) => w.id === state.activeWorkspaceId);
+      const name = workspace?.name ?? 'workspace';
+      const date = new Date().toISOString().slice(0, 10);
+      const folderName = `file-harbor-backup-${name}-${date}`;
+
+      const result = await dialog.showOpenDialog({
+        title: 'Choose Backup Destination',
+        properties: ['openDirectory', 'createDirectory'],
+      });
+      if (result.canceled || result.filePaths.length === 0) {
+        return { success: false };
+      }
+
+      const destinationPath = path.join(result.filePaths[0], folderName);
+
+      // Flush WAL before copying
+      state.db.walCheckpoint();
+
+      const stats = state.db.getLibraryStats(state.libraryPath);
+      const meta = await createBackup(
+        state.libraryPath,
+        destinationPath,
+        app.getVersion(),
+        stats.documentCount,
+        stats.totalSizeBytes
+      );
+
+      return { success: true, path: destinationPath, meta };
+    } catch (err) {
+      ipcLog.error('WORKSPACE_BACKUP failed:', err);
+      return { success: false, error: err instanceof Error ? err.message : String(err) };
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.WORKSPACE_RESTORE, async () => {
+    try {
+      if (!state.db || !state.libraryPath) {
+        return { success: false, error: 'No workspace open' };
+      }
+
+      const result = await dialog.showOpenDialog({
+        title: 'Select Backup Folder',
+        properties: ['openDirectory'],
+      });
+      if (result.canceled || result.filePaths.length === 0) {
+        return { success: false };
+      }
+
+      const backupPath = result.filePaths[0];
+
+      let meta;
+      try {
+        meta = await validateBackup(backupPath);
+      } catch {
+        return { success: false, error: 'Not a valid File Harbor backup folder' };
+      }
+
+      // Confirmation dialog
+      const confirm = await dialog.showMessageBox({
+        type: 'warning',
+        title: 'Restore from Backup',
+        message: 'Restore from backup?',
+        detail: `This will replace all documents in the current workspace with the backup from ${new Date(meta.createdAt).toLocaleDateString()} (${meta.documentCount} documents). This cannot be undone.`,
+        buttons: ['Cancel', 'Restore'],
+        defaultId: 0,
+        cancelId: 0,
+      });
+
+      if (confirm.response === 0) {
+        return { success: false };
+      }
+
+      const libraryPath = state.libraryPath;
+
+      // Teardown services (releases SQLite lock)
+      await callbacks.teardownServices();
+
+      await restoreBackup(backupPath, libraryPath);
+
+      // Re-initialize services
+      const settings = loadSettings();
+      const workspace = settings.workspaces.find((w) => w.libraryPath === libraryPath);
+      if (workspace) {
+        callbacks.initializeServices(workspace);
+      }
+
+      // Notify renderer to reload
+      BrowserWindow.getAllWindows().forEach((w) => {
+        w.webContents.send(IPC_CHANNELS.WORKSPACE_SWITCHED, state.activeWorkspaceId);
+      });
+
+      return { success: true, meta };
+    } catch (err) {
+      ipcLog.error('WORKSPACE_RESTORE failed:', err);
+      return { success: false, error: err instanceof Error ? err.message : String(err) };
     }
   });
 

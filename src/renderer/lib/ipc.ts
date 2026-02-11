@@ -7,6 +7,8 @@ import type {
   SuggestionStats,
   DocumentCounts,
   Workspace,
+  BackupResult,
+  RestoreResult,
 } from '../../shared/types';
 
 const api = window.electronAPI;
@@ -68,6 +70,12 @@ export const getPathForFile = (file: File): string => api.getPathForFile(file);
 // Menu events
 export const onMenuImportFiles = (cb: () => void) => api.onMenuImportFiles(cb);
 export const onMenuImportFolder = (cb: () => void) => api.onMenuImportFolder(cb);
+export const onMenuBackup = (cb: () => void) => api.onMenuBackup(cb);
+export const onMenuRestore = (cb: () => void) => api.onMenuRestore(cb);
+
+// Backup
+export const backupWorkspace = (): Promise<BackupResult> => api.backupWorkspace();
+export const restoreWorkspace = (): Promise<RestoreResult> => api.restoreWorkspace();
 
 // Workspaces
 export const listWorkspaces = (): Promise<Workspace[]> => api.listWorkspaces();
