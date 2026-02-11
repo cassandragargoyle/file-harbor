@@ -23,7 +23,7 @@ import {
 } from './lib/library-manager';
 import { loadSettings, saveSettings, updateWorkspace, getOllamaSettings, updateOllamaSettings } from './lib/settings';
 import type { OllamaSettings } from './lib/settings';
-import { ACCEPTED_EXTENSIONS } from '../shared/constants';
+import { ACCEPTED_EXTENSIONS, MAX_EXTRACTED_TEXT_LENGTH } from '../shared/constants';
 import type { Category, DocumentSource, IngestResult, Workspace } from '../shared/types';
 import { suggestCategory } from './services/keyword-matcher';
 import { suggestFilename } from './services/filename-suggester';
@@ -213,7 +213,15 @@ export function registerIpcHandlers(
             tempResult.extension
           );
 
-          // Step 4: Create DB record
+          // Step 4: Extract text for plain-text files
+          let extractedText: string | null = null;
+          if (tempResult.mimeType === 'text/plain' || tempResult.mimeType === 'text/markdown') {
+            const absPath = getAbsolutePath(state.libraryPath, storedPath);
+            const raw = await fsp.readFile(absPath, 'utf-8');
+            extractedText = raw.slice(0, MAX_EXTRACTED_TEXT_LENGTH);
+          }
+
+          // Step 5: Create DB record
           const doc = state.db.insertDocument({
             id: tempResult.uuid,
             original_filename: path.basename(filePath),
@@ -225,22 +233,23 @@ export function registerIpcHandlers(
             source_path: filePath,
             category: null,
             content_hash: tempResult.contentHash,
-            extracted_text: null,
+            extracted_text: extractedText,
             suggested_category: null,
             suggestion_confidence: null,
             suggestion_source: null,
             suggested_filename: null,
+            suggestion_outcome: null,
           });
 
           results.push({ path: filePath, status: 'success', documentId: doc.id });
 
-          // Step 5: Queue PDF text extraction (non-blocking)
+          // Step 6: Queue PDF text extraction (non-blocking)
           if (tempResult.mimeType === 'application/pdf' && state.pdfExtractor) {
             const absPath = getAbsolutePath(state.libraryPath, storedPath);
             state.pdfExtractor.queueExtraction(absPath, doc.id);
           }
 
-          // Step 6: Run keyword suggestions on filename (text not yet available for PDFs)
+          // Step 7: Run suggestions (text already available for .txt/.md, filename-only for PDFs)
           runSuggestions(state, doc.id);
         } catch (err) {
           ipcLog.error(`Failed to ingest ${filePath}:`, err);
@@ -472,6 +481,7 @@ export function registerIpcHandlers(
         if (!doc?.suggested_category) return;
         state.db.updateDocumentCategory(id, doc.suggested_category);
         state.db.clearSuggestion(id);
+        state.db.setSuggestionOutcome(id, 'accepted');
       } catch (err) {
         ipcLog.error('DOCUMENTS_ACCEPT_SUGGESTION failed:', err);
       }
@@ -484,6 +494,7 @@ export function registerIpcHandlers(
       try {
         if (!state.db) return;
         state.db.clearSuggestion(id);
+        state.db.setSuggestionOutcome(id, 'dismissed');
       } catch (err) {
         ipcLog.error('DOCUMENTS_DISMISS_SUGGESTION failed:', err);
       }
@@ -540,6 +551,48 @@ export function registerIpcHandlers(
       }
     }
   );
+
+  ipcMain.handle(IPC_CHANNELS.DOCUMENTS_GET_WITH_SUGGESTIONS, () => {
+    try {
+      if (!state.db) return [];
+      return state.db.getDocumentsWithSuggestions();
+    } catch (err) {
+      ipcLog.error('DOCUMENTS_GET_WITH_SUGGESTIONS failed:', err);
+      return [];
+    }
+  });
+
+  ipcMain.handle(
+    IPC_CHANNELS.DOCUMENTS_BATCH_ACCEPT_SUGGESTIONS,
+    (_event, ids: string[]) => {
+      try {
+        if (!state.db) return { accepted: 0 };
+        let accepted = 0;
+        for (const id of ids) {
+          const doc = state.db.getDocument(id);
+          if (!doc?.suggested_category) continue;
+          state.db.updateDocumentCategory(id, doc.suggested_category);
+          state.db.clearSuggestion(id);
+          state.db.setSuggestionOutcome(id, 'accepted');
+          accepted++;
+        }
+        return { accepted };
+      } catch (err) {
+        ipcLog.error('DOCUMENTS_BATCH_ACCEPT_SUGGESTIONS failed:', err);
+        return { accepted: 0 };
+      }
+    }
+  );
+
+  ipcMain.handle(IPC_CHANNELS.DOCUMENTS_GET_SUGGESTION_STATS, () => {
+    try {
+      if (!state.db) return null;
+      return state.db.getSuggestionStats();
+    } catch (err) {
+      ipcLog.error('DOCUMENTS_GET_SUGGESTION_STATS failed:', err);
+      return null;
+    }
+  });
 
   // ── Workspaces ──────────────────────────────────────────────
 

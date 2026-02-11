@@ -1,0 +1,1 @@
+ALTER TABLE `documents` ADD `suggestion_outcome` text;

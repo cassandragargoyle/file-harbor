@@ -4,6 +4,7 @@ import type {
   DocumentSource,
   IngestResult,
   LibraryInfo,
+  SuggestionStats,
   DocumentCounts,
   Workspace,
 } from '../../shared/types';
@@ -47,6 +48,12 @@ export const acceptSuggestion = (id: string) => api.acceptSuggestion(id);
 export const dismissSuggestion = (id: string) => api.dismissSuggestion(id);
 export const acceptRenameSuggestion = (id: string) => api.acceptRenameSuggestion(id);
 export const suggestFilename = (id: string): Promise<string | null> => api.suggestFilename(id);
+export const getDocumentsWithSuggestions = (): Promise<DocumentRecord[]> =>
+  api.getDocumentsWithSuggestions();
+export const batchAcceptSuggestions = (ids: string[]): Promise<{ accepted: number }> =>
+  api.batchAcceptSuggestions(ids);
+export const getSuggestionStats = (): Promise<SuggestionStats | null> =>
+  api.getSuggestionStats();
 
 // Watcher
 export const setWatchedFolder = () => api.setWatchedFolder();

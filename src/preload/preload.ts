@@ -25,6 +25,9 @@ const IPC = {
   DOCUMENTS_DISMISS_SUGGESTION: 'documents:dismiss-suggestion',
   DOCUMENTS_ACCEPT_RENAME_SUGGESTION: 'documents:accept-rename-suggestion',
   DOCUMENTS_SUGGEST_FILENAME: 'documents:suggest-filename',
+  DOCUMENTS_GET_WITH_SUGGESTIONS: 'documents:get-with-suggestions',
+  DOCUMENTS_BATCH_ACCEPT_SUGGESTIONS: 'documents:batch-accept-suggestions',
+  DOCUMENTS_GET_SUGGESTION_STATS: 'documents:get-suggestion-stats',
   WATCHER_SET_FOLDER: 'watcher:set-folder',
   WATCHER_GET_FOLDER: 'watcher:get-folder',
   WATCHER_CLEAR_FOLDER: 'watcher:clear-folder',
@@ -83,6 +86,12 @@ const electronAPI = {
     ipcRenderer.invoke(IPC.DOCUMENTS_ACCEPT_RENAME_SUGGESTION, id),
   suggestFilename: (id: string) =>
     ipcRenderer.invoke(IPC.DOCUMENTS_SUGGEST_FILENAME, id),
+  getDocumentsWithSuggestions: () =>
+    ipcRenderer.invoke(IPC.DOCUMENTS_GET_WITH_SUGGESTIONS),
+  batchAcceptSuggestions: (ids: string[]) =>
+    ipcRenderer.invoke(IPC.DOCUMENTS_BATCH_ACCEPT_SUGGESTIONS, ids),
+  getSuggestionStats: () =>
+    ipcRenderer.invoke(IPC.DOCUMENTS_GET_SUGGESTION_STATS),
 
   // Watcher
   setWatchedFolder: () => ipcRenderer.invoke(IPC.WATCHER_SET_FOLDER),

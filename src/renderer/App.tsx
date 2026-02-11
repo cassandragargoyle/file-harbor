@@ -10,6 +10,7 @@ import { CategoryPicker } from './components/filing/CategoryPicker';
 import { ContextMenu, getDocumentActions } from './components/documents/ContextMenu';
 import { DeleteDialog } from './components/documents/DeleteDialog';
 import { RenameDialog } from './components/documents/RenameDialog';
+import { BatchFileDialog } from './components/inbox/BatchFileDialog';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { showIngestToasts } from './lib/toast-helpers';
 import type { Category, DocumentRecord } from '../shared/types';
@@ -31,6 +32,7 @@ export default function App() {
   const [deleteDocId, setDeleteDocId] = useState<string | null>(null);
   const [renameDocId, setRenameDocId] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ docId: string; x: number; y: number } | null>(null);
+  const [showBatchFile, setShowBatchFile] = useState(false);
 
   const selectedDoc: DocumentRecord | undefined = documents.find((d) => d.id === selectedDocumentId);
   const deleteDoc: DocumentRecord | undefined = deleteDocId ? documents.find((d) => d.id === deleteDocId) : undefined;
@@ -160,6 +162,15 @@ export default function App() {
     }
   }, [loadDocuments]);
 
+  const handleBatchFileComplete = useCallback(async (acceptedCount: number) => {
+    setShowBatchFile(false);
+    if (acceptedCount > 0) {
+      toast.success(`Filed ${acceptedCount} ${acceptedCount === 1 ? 'document' : 'documents'}`);
+    }
+    await loadDocuments();
+    await refreshCounts();
+  }, [loadDocuments, refreshCounts]);
+
   const handleCategorySelect = useCallback(async (category: Category | null) => {
     if (!categoryPickerDocId) return;
     try {
@@ -273,6 +284,7 @@ export default function App() {
             onDelete={handleDeleteAction}
             onAcceptSuggestion={handleAcceptSuggestion}
             onDismissSuggestion={handleDismissSuggestion}
+            onBatchFile={() => setShowBatchFile(true)}
           />
         </div>
       </div>
@@ -305,6 +317,14 @@ export default function App() {
           suggestedFilename={renameDoc.suggested_filename ?? undefined}
           onConfirm={handleRenameConfirm}
           onCancel={() => setRenameDocId(null)}
+        />
+      )}
+
+      {/* Batch auto-file dialog */}
+      {showBatchFile && (
+        <BatchFileDialog
+          onComplete={handleBatchFileComplete}
+          onClose={() => setShowBatchFile(false)}
         />
       )}
 

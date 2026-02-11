@@ -1,4 +1,4 @@
-import type { DocumentRecord, Category, DocumentSource, SuggestionSource, IngestResult, LibraryInfo, DocumentCounts, Workspace } from '../shared/types';
+import type { DocumentRecord, Category, DocumentSource, SuggestionSource, SuggestionStats, IngestResult, LibraryInfo, DocumentCounts, Workspace } from '../shared/types';
 
 interface ElectronAPI {
   // Library
@@ -35,6 +35,9 @@ interface ElectronAPI {
   dismissSuggestion: (id: string) => Promise<void>;
   acceptRenameSuggestion: (id: string) => Promise<void>;
   suggestFilename: (id: string) => Promise<string | null>;
+  getDocumentsWithSuggestions: () => Promise<DocumentRecord[]>;
+  batchAcceptSuggestions: (ids: string[]) => Promise<{ accepted: number }>;
+  getSuggestionStats: () => Promise<SuggestionStats | null>;
 
   // Watcher
   setWatchedFolder: () => Promise<string | null>;

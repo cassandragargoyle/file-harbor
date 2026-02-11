@@ -1,3 +1,4 @@
+import { Sparkles } from 'lucide-react';
 import { useAppStore } from '../../stores/app-store';
 import { DocumentList } from '../documents/DocumentList';
 import { DocumentPreview } from '../documents/DocumentPreview';
@@ -13,9 +14,10 @@ interface MainContentProps {
   onDelete?: (docId: string) => void;
   onAcceptSuggestion?: (docId: string) => void;
   onDismissSuggestion?: (docId: string) => void;
+  onBatchFile?: () => void;
 }
 
-export function MainContent({ onContextMenu, onFile, onExport, onOpen, onReveal, onRename, onDelete, onAcceptSuggestion, onDismissSuggestion }: MainContentProps) {
+export function MainContent({ onContextMenu, onFile, onExport, onOpen, onReveal, onRename, onDelete, onAcceptSuggestion, onDismissSuggestion, onBatchFile }: MainContentProps) {
   const currentView = useAppStore((s) => s.currentView);
   const documents = useAppStore((s) => s.documents);
   const sortBy = useAppStore((s) => s.sortBy);
@@ -46,6 +48,16 @@ export function MainContent({ onContextMenu, onFile, onExport, onOpen, onReveal,
             </span>
           </div>
 
+          <div className="flex items-center gap-2">
+          {!isSearching && currentView === 'inbox' && documents.some((d) => d.suggested_category && d.category === null) && onBatchFile && (
+            <button
+              onClick={onBatchFile}
+              className="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs text-secondary transition-colors hover:bg-elevated"
+            >
+              <Sparkles className="h-3 w-3" />
+              Auto-file inbox
+            </button>
+          )}
           {!isSearching && (
             <div className="flex gap-0.5 rounded-md bg-surface p-0.5 text-xs">
               <button
@@ -72,6 +84,7 @@ export function MainContent({ onContextMenu, onFile, onExport, onOpen, onReveal,
               </button>
             </div>
           )}
+          </div>
         </div>
 
         <DocumentList

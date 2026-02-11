@@ -28,6 +28,9 @@ export const IPC_CHANNELS = {
   DOCUMENTS_DISMISS_SUGGESTION: 'documents:dismiss-suggestion',
   DOCUMENTS_ACCEPT_RENAME_SUGGESTION: 'documents:accept-rename-suggestion',
   DOCUMENTS_SUGGEST_FILENAME: 'documents:suggest-filename',
+  DOCUMENTS_GET_WITH_SUGGESTIONS: 'documents:get-with-suggestions',
+  DOCUMENTS_BATCH_ACCEPT_SUGGESTIONS: 'documents:batch-accept-suggestions',
+  DOCUMENTS_GET_SUGGESTION_STATS: 'documents:get-suggestion-stats',
 
   // Watcher
   WATCHER_SET_FOLDER: 'watcher:set-folder',

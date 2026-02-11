@@ -119,12 +119,20 @@ function SuggestionChip({
   onAccept?: () => void;
   onDismiss?: () => void;
 }) {
-  const isUncertain = confidence < 0.7;
+  const isHighConfidence = confidence >= 0.7;
+
+  const chipClasses = isHighConfidence
+    ? 'bg-accent/10 text-accent'
+    : 'bg-warning/10 text-warning';
+
+  const actionClasses = isHighConfidence
+    ? 'hover:bg-accent/20'
+    : 'hover:bg-warning/20';
 
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2 py-0.5 text-[11px] font-medium text-accent">
+    <span className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium', chipClasses)}>
       <Sparkles className="h-3 w-3" />
-      {category}{isUncertain ? '?' : ''}
+      {category}{!isHighConfidence ? '?' : ''}
       {onAccept && (
         <span
           role="button"
@@ -134,7 +142,7 @@ function SuggestionChip({
             e.stopPropagation();
             onAccept();
           }}
-          className="ml-0.5 rounded p-0.5 transition-colors hover:bg-accent/20"
+          className={cn('ml-0.5 rounded p-0.5 transition-colors', actionClasses)}
         >
           <Check className="h-3 w-3" />
         </span>
@@ -148,7 +156,7 @@ function SuggestionChip({
             e.stopPropagation();
             onDismiss();
           }}
-          className="rounded p-0.5 transition-colors hover:bg-accent/20"
+          className={cn('rounded p-0.5 transition-colors', actionClasses)}
         >
           <X className="h-3 w-3" />
         </span>

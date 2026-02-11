@@ -117,6 +117,7 @@ export class WatcherService {
         suggestion_confidence: null,
         suggestion_source: null,
         suggested_filename: null,
+        suggestion_outcome: null,
       });
 
       if (tempResult.mimeType === 'application/pdf' && pdfExtractor) {

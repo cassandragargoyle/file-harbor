@@ -17,6 +17,7 @@ export type Category =
   | 'Other';
 
 export type SuggestionSource = 'keywords' | 'ollama';
+export type SuggestionOutcome = 'accepted' | 'dismissed';
 
 export interface DocumentRecord {
   id: string;
@@ -34,6 +35,7 @@ export interface DocumentRecord {
   suggestion_confidence: number | null;
   suggestion_source: SuggestionSource | null;
   suggested_filename: string | null;
+  suggestion_outcome: SuggestionOutcome | null;
   updated_at: string;
 }
 
@@ -52,10 +54,18 @@ export interface Workspace {
   watchedFolderPath?: string;
 }
 
+export interface SuggestionStats {
+  pendingSuggestions: number;
+  accepted: number;
+  dismissed: number;
+  accuracyRate: number | null;
+}
+
 export interface LibraryInfo {
   path: string;
   documentCount: number;
   totalSizeBytes: number;
+  suggestionStats: SuggestionStats;
 }
 
 export interface DocumentCounts {

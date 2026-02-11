@@ -7,7 +7,7 @@ import path from 'node:path';
 
 import * as schema from '../../shared/schema';
 import { CATEGORIES } from '../../shared/constants';
-import type { DocumentRecord, Category, SuggestionSource, DocumentCounts, LibraryInfo } from '../../shared/types';
+import type { DocumentRecord, Category, SuggestionSource, SuggestionOutcome, DocumentCounts, LibraryInfo, SuggestionStats } from '../../shared/types';
 import { dbLog } from '../lib/logger';
 
 export class DatabaseService {
@@ -176,6 +176,57 @@ export class DatabaseService {
     return counts;
   }
 
+  getDocumentsWithSuggestions(): DocumentRecord[] {
+    return this.db
+      .select()
+      .from(schema.documents)
+      .where(
+        sql`${schema.documents.category} IS NULL AND ${schema.documents.suggested_category} IS NOT NULL AND coalesce(${schema.documents.suggestion_confidence}, 0) >= 0.3`
+      )
+      .orderBy(sql`${schema.documents.suggestion_confidence} DESC`)
+      .all() as DocumentRecord[];
+  }
+
+  setSuggestionOutcome(id: string, outcome: SuggestionOutcome): void {
+    this.db
+      .update(schema.documents)
+      .set({ suggestion_outcome: outcome, updated_at: new Date().toISOString() })
+      .where(eq(schema.documents.id, id))
+      .run();
+  }
+
+  getSuggestionStats(): SuggestionStats {
+    const pending = this.db
+      .select({ count: sql<number>`count(*)` })
+      .from(schema.documents)
+      .where(
+        sql`${schema.documents.category} IS NULL AND ${schema.documents.suggested_category} IS NOT NULL AND coalesce(${schema.documents.suggestion_confidence}, 0) >= 0.3`
+      )
+      .get()!;
+
+    const outcomes = this.db
+      .select({
+        outcome: schema.documents.suggestion_outcome,
+        count: sql<number>`count(*)`,
+      })
+      .from(schema.documents)
+      .where(sql`${schema.documents.suggestion_outcome} IS NOT NULL`)
+      .groupBy(schema.documents.suggestion_outcome)
+      .all();
+
+    let accepted = 0;
+    let dismissed = 0;
+    for (const row of outcomes) {
+      if (row.outcome === 'accepted') accepted = row.count;
+      if (row.outcome === 'dismissed') dismissed = row.count;
+    }
+
+    const total = accepted + dismissed;
+    const accuracyRate = total > 0 ? accepted / total : null;
+
+    return { pendingSuggestions: pending.count, accepted, dismissed, accuracyRate };
+  }
+
   getLibraryStats(libraryPath: string): LibraryInfo {
     const row = this.db
       .select({
@@ -189,6 +240,7 @@ export class DatabaseService {
       path: libraryPath,
       documentCount: row.count,
       totalSizeBytes: row.totalSize,
+      suggestionStats: this.getSuggestionStats(),
     };
   }
 

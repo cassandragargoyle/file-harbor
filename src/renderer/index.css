@@ -25,6 +25,7 @@
 
   /* Semantic */
   --color-danger: var(--th-danger);
+  --color-warning: var(--th-warning);
 }
 
 :root {
@@ -47,6 +48,7 @@
   --th-accent-fg: #2563eb;
 
   --th-danger: #dc2626;
+  --th-warning: #d97706;
 }
 
 [data-theme="dark"] {
@@ -69,6 +71,7 @@
   --th-accent-fg: #60a5fa;    /* blue-400 */
 
   --th-danger: #f87171;       /* red-400 */
+  --th-warning: #fbbf24;      /* amber-400 */
 }
 
 body {

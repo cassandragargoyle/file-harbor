@@ -18,6 +18,7 @@ export const documents = sqliteTable(
     suggestion_confidence: real('suggestion_confidence'),
     suggestion_source: text('suggestion_source'),
     suggested_filename: text('suggested_filename'),
+    suggestion_outcome: text('suggestion_outcome'),
     updated_at: text('updated_at').notNull(),
   },
   (table) => [

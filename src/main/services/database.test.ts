@@ -30,6 +30,7 @@ function makeTestDoc(
     suggestion_confidence: null,
     suggestion_source: null,
     suggested_filename: null,
+    suggestion_outcome: null,
     ...overrides,
   };
 }
