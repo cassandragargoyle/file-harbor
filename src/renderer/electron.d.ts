@@ -1,4 +1,4 @@
-import type { DocumentRecord, Category, DocumentSource, SuggestionSource, SuggestionStats, IngestResult, LibraryInfo, DocumentCounts, Workspace } from '../shared/types';
+import type { DocumentRecord, Category, DocumentSource, SuggestionSource, SuggestionStats, IngestResult, LibraryInfo, DocumentCounts, Workspace, BackupResult, RestoreResult, ExportAllResult } from '../shared/types';
 
 interface ElectronAPI {
   // Library
@@ -16,6 +16,7 @@ interface ElectronAPI {
   searchDocuments: (query: string) => Promise<DocumentRecord[]>;
   getDocumentFilePath: (id: string) => Promise<string | null>;
   exportDocument: (id: string) => Promise<boolean>;
+  exportAllDocuments: () => Promise<ExportAllResult>;
   revealInFinder: (id: string) => Promise<void>;
   getDocumentCounts: () => Promise<DocumentCounts | null>;
   openFilePicker: () => Promise<string[] | null>;
@@ -52,6 +53,13 @@ interface ElectronAPI {
   // Menu events
   onMenuImportFiles: (callback: () => void) => () => void;
   onMenuImportFolder: (callback: () => void) => () => void;
+  onMenuExportAll: (callback: () => void) => () => void;
+
+  // Backup
+  backupWorkspace: () => Promise<BackupResult>;
+  restoreWorkspace: () => Promise<RestoreResult>;
+  onMenuBackup: (callback: () => void) => () => void;
+  onMenuRestore: (callback: () => void) => () => void;
 
   // Workspaces
   listWorkspaces: () => Promise<Workspace[]>;

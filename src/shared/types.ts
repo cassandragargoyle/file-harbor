@@ -93,3 +93,11 @@ export interface RestoreResult {
   meta?: BackupMeta;
   error?: string;
 }
+
+export interface ExportAllResult {
+  success: boolean;
+  exported?: number;
+  failed?: number;
+  path?: string;
+  error?: string;
+}

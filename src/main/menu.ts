@@ -69,6 +69,14 @@ export function buildAppMenu(getLibraryPath: () => string | null): void {
           },
         },
         { type: 'separator' },
+        {
+          label: 'Export All Files...',
+          click: () => {
+            const win = BrowserWindow.getFocusedWindow();
+            if (win) win.webContents.send(IPC_CHANNELS.MENU_EXPORT_ALL);
+          },
+        },
+        { type: 'separator' },
         isMac ? { role: 'close' as const } : { role: 'quit' as const },
       ],
     },

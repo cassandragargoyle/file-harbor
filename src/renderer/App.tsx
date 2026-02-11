@@ -136,6 +136,18 @@ export default function App() {
       }
     });
 
+    const cleanupMenuExportAll = ipc.onMenuExportAll(async () => {
+      const result = await ipc.exportAllDocuments();
+      if (result.success) {
+        toast.success(`Exported ${result.exported} documents to folder`);
+        if (result.failed && result.failed > 0) {
+          toast.error(`${result.failed} files could not be exported`);
+        }
+      } else if (result.error) {
+        toast.error(`Export failed: ${result.error}`);
+      }
+    });
+
     // Listen for LLM suggestion updates (Phase 2)
     const cleanupSuggestionUpdated = ipc.onSuggestionUpdated(() => {
       loadDocuments();
@@ -159,6 +171,7 @@ export default function App() {
       cleanupMenuFolder();
       cleanupMenuBackup();
       cleanupMenuRestore();
+      cleanupMenuExportAll();
       cleanupWatcherError();
       cleanupSuggestionUpdated();
     };

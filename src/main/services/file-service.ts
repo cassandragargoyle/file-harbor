@@ -207,3 +207,149 @@ export async function exportFile(
 export function getAbsolutePath(libraryPath: string, storedPath: string): string {
   return path.join(libraryPath, storedPath);
 }
+
+// ── Export All ──────────────────────────────────────────────────
+
+import type { DocumentRecord, ExportAllResult } from '../../shared/types';
+
+const UNSAFE_FILENAME_CHARS = /[/\\:*?"<>|\x00]/g;
+
+function sanitizeFilename(name: string): string {
+  return name.replace(UNSAFE_FILENAME_CHARS, '_').slice(0, 200);
+}
+
+/**
+ * Resolve the best human-readable filename for a document.
+ * Priority: accepted suggested_filename → original_filename → uuid fallback.
+ */
+function resolveExportFilename(doc: DocumentRecord): string {
+  const ext = path.extname(doc.stored_path).toLowerCase();
+
+  // Priority 1: accepted suggested filename (has no extension — append it)
+  if (doc.suggested_filename && doc.suggestion_outcome === 'accepted') {
+    return sanitizeFilename(doc.suggested_filename) + ext;
+  }
+
+  // Priority 2: original filename
+  if (doc.original_filename) {
+    return sanitizeFilename(doc.original_filename);
+  }
+
+  // Priority 3: UUID fallback
+  return `${doc.id}${ext}`;
+}
+
+/**
+ * Produce a unique filename within a directory by appending (2), (3), etc.
+ */
+function deduplicateFilename(
+  filename: string,
+  usedNames: Set<string>
+): string {
+  const key = filename.toLowerCase();
+  if (!usedNames.has(key)) {
+    usedNames.add(key);
+    return filename;
+  }
+
+  const ext = path.extname(filename);
+  const base = filename.slice(0, filename.length - ext.length);
+  let counter = 2;
+  while (usedNames.has(`${base} (${counter})${ext}`.toLowerCase())) {
+    counter++;
+  }
+  const unique = `${base} (${counter})${ext}`;
+  usedNames.add(unique.toLowerCase());
+  return unique;
+}
+
+interface ExportManifestEntry {
+  exportedFilename: string;
+  originalFilename: string;
+  category: string | null;
+  addedAt: string;
+  sizeBytes: number;
+  contentHash: string;
+}
+
+/**
+ * Export all documents to a destination folder organized by category.
+ * Returns a summary of what was exported.
+ */
+export async function exportAllFiles(
+  libraryPath: string,
+  documents: DocumentRecord[],
+  destinationRoot: string,
+  workspaceName: string,
+  appVersion: string
+): Promise<ExportAllResult> {
+  await fsp.mkdir(destinationRoot, { recursive: true });
+
+  let exported = 0;
+  let failed = 0;
+  const manifestEntries: ExportManifestEntry[] = [];
+
+  // Track used names per subfolder to handle collisions
+  const usedNamesPerFolder = new Map<string, Set<string>>();
+
+  for (let i = 0; i < documents.length; i++) {
+    const doc = documents[i];
+    const subfolder = doc.category ?? 'Inbox';
+    const subfolderPath = path.join(destinationRoot, subfolder);
+
+    // Get or create the used-names set for this subfolder
+    if (!usedNamesPerFolder.has(subfolder)) {
+      usedNamesPerFolder.set(subfolder, new Set());
+    }
+    const usedNames = usedNamesPerFolder.get(subfolder)!;
+
+    const rawFilename = resolveExportFilename(doc);
+    const filename = deduplicateFilename(rawFilename, usedNames);
+
+    const destPath = path.join(subfolderPath, filename);
+    const sourcePath = path.join(libraryPath, doc.stored_path);
+
+    try {
+      await fsp.mkdir(subfolderPath, { recursive: true });
+      await fsp.copyFile(sourcePath, destPath);
+      exported++;
+      manifestEntries.push({
+        exportedFilename: `${subfolder}/${filename}`,
+        originalFilename: doc.original_filename,
+        category: doc.category,
+        addedAt: doc.added_at,
+        sizeBytes: doc.size_bytes,
+        contentHash: `sha256:${doc.content_hash}`,
+      });
+    } catch (err) {
+      fileLog.error(`Export failed for ${doc.id} (${doc.stored_path}):`, err);
+      failed++;
+    }
+
+    // Yield to event loop periodically
+    if (i % 50 === 49) {
+      await new Promise((resolve) => setImmediate(resolve));
+    }
+  }
+
+  // Write manifest
+  const manifest = {
+    exportedAt: new Date().toISOString(),
+    appVersion,
+    workspaceName,
+    documentCount: exported,
+    documents: manifestEntries,
+  };
+
+  try {
+    await fsp.writeFile(
+      path.join(destinationRoot, 'export-manifest.json'),
+      JSON.stringify(manifest, null, 2),
+      'utf-8'
+    );
+  } catch (err) {
+    fileLog.error('Failed to write export manifest:', err);
+  }
+
+  return { success: true, exported, failed, path: destinationRoot };
+}

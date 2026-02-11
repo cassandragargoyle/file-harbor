@@ -136,6 +136,13 @@ export class DatabaseService {
       .get() as DocumentRecord | undefined;
   }
 
+  getAllDocuments(): DocumentRecord[] {
+    return this.db
+      .select()
+      .from(schema.documents)
+      .all() as DocumentRecord[];
+  }
+
   searchDocuments(query: string): DocumentRecord[] {
     const pattern = `%${query}%`;
     return this.db

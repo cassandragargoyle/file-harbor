@@ -13,6 +13,7 @@ const IPC = {
   DOCUMENTS_SEARCH: 'documents:search',
   DOCUMENTS_GET_FILE_PATH: 'documents:get-file-path',
   DOCUMENTS_EXPORT: 'documents:export',
+  DOCUMENTS_EXPORT_ALL: 'documents:export-all',
   DOCUMENTS_REVEAL_IN_FINDER: 'documents:reveal-in-finder',
   DOCUMENTS_GET_COUNTS: 'documents:get-counts',
   DOCUMENTS_OPEN_FILE_PICKER: 'documents:open-file-picker',
@@ -37,6 +38,7 @@ const IPC = {
   MENU_IMPORT_FOLDER: 'menu:import-folder',
   MENU_BACKUP: 'menu:backup',
   MENU_RESTORE: 'menu:restore',
+  MENU_EXPORT_ALL: 'menu:export-all',
   WORKSPACE_BACKUP: 'workspace:backup',
   WORKSPACE_RESTORE: 'workspace:restore',
   WORKSPACE_LIST: 'workspace:list',
@@ -74,6 +76,7 @@ const electronAPI = {
   searchDocuments: (query: string) => ipcRenderer.invoke(IPC.DOCUMENTS_SEARCH, query),
   getDocumentFilePath: (id: string) => ipcRenderer.invoke(IPC.DOCUMENTS_GET_FILE_PATH, id),
   exportDocument: (id: string) => ipcRenderer.invoke(IPC.DOCUMENTS_EXPORT, id),
+  exportAllDocuments: () => ipcRenderer.invoke(IPC.DOCUMENTS_EXPORT_ALL),
   revealInFinder: (id: string) => ipcRenderer.invoke(IPC.DOCUMENTS_REVEAL_IN_FINDER, id),
   getDocumentCounts: () => ipcRenderer.invoke(IPC.DOCUMENTS_GET_COUNTS),
   openFilePicker: () => ipcRenderer.invoke(IPC.DOCUMENTS_OPEN_FILE_PICKER),
@@ -141,6 +144,11 @@ const electronAPI = {
     const handler = () => callback();
     ipcRenderer.on(IPC.MENU_RESTORE, handler);
     return () => ipcRenderer.removeListener(IPC.MENU_RESTORE, handler);
+  },
+  onMenuExportAll: (callback: () => void) => {
+    const handler = () => callback();
+    ipcRenderer.on(IPC.MENU_EXPORT_ALL, handler);
+    return () => ipcRenderer.removeListener(IPC.MENU_EXPORT_ALL, handler);
   },
 
   // Workspaces

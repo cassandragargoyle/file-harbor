@@ -13,6 +13,7 @@ import {
   discardTemp,
   deleteStoredFile,
   exportFile,
+  exportAllFiles,
   getAbsolutePath,
   resolveFilePaths,
 } from './services/file-service';
@@ -773,6 +774,47 @@ export function registerIpcHandlers(
       return { success: true, meta };
     } catch (err) {
       ipcLog.error('WORKSPACE_RESTORE failed:', err);
+      return { success: false, error: err instanceof Error ? err.message : String(err) };
+    }
+  });
+
+  // ── Export All ──────────────────────────────────────────────
+
+  ipcMain.handle(IPC_CHANNELS.DOCUMENTS_EXPORT_ALL, async () => {
+    try {
+      if (!state.db || !state.libraryPath) {
+        return { success: false, error: 'No workspace open' };
+      }
+
+      const documents = state.db.getAllDocuments();
+      if (documents.length === 0) {
+        return { success: false, error: 'No documents to export' };
+      }
+
+      const result = await dialog.showOpenDialog({
+        title: 'Choose Export Destination',
+        properties: ['openDirectory', 'createDirectory'],
+      });
+      if (result.canceled || result.filePaths.length === 0) {
+        return { success: false };
+      }
+
+      const date = new Date().toISOString().slice(0, 10);
+      const destinationRoot = path.join(result.filePaths[0], `Export_${date}`);
+
+      const settings = loadSettings();
+      const workspace = settings.workspaces.find((w) => w.id === state.activeWorkspaceId);
+      const workspaceName = workspace?.name ?? 'workspace';
+
+      return await exportAllFiles(
+        state.libraryPath,
+        documents,
+        destinationRoot,
+        workspaceName,
+        app.getVersion()
+      );
+    } catch (err) {
+      ipcLog.error('DOCUMENTS_EXPORT_ALL failed:', err);
       return { success: false, error: err instanceof Error ? err.message : String(err) };
     }
   });

@@ -9,6 +9,7 @@ import type {
   Workspace,
   BackupResult,
   RestoreResult,
+  ExportAllResult,
 } from '../../shared/types';
 
 const api = window.electronAPI;
@@ -34,6 +35,7 @@ export const searchDocuments = (query: string): Promise<DocumentRecord[]> =>
 export const getDocumentFilePath = (id: string): Promise<string | null> =>
   api.getDocumentFilePath(id);
 export const exportDocument = (id: string): Promise<boolean> => api.exportDocument(id);
+export const exportAllDocuments = (): Promise<ExportAllResult> => api.exportAllDocuments();
 export const revealInFinder = (id: string) => api.revealInFinder(id);
 export const getDocumentCounts = (): Promise<DocumentCounts | null> => api.getDocumentCounts();
 export const openFilePicker = (): Promise<string[] | null> => api.openFilePicker();
@@ -72,6 +74,7 @@ export const onMenuImportFiles = (cb: () => void) => api.onMenuImportFiles(cb);
 export const onMenuImportFolder = (cb: () => void) => api.onMenuImportFolder(cb);
 export const onMenuBackup = (cb: () => void) => api.onMenuBackup(cb);
 export const onMenuRestore = (cb: () => void) => api.onMenuRestore(cb);
+export const onMenuExportAll = (cb: () => void) => api.onMenuExportAll(cb);
 
 // Backup
 export const backupWorkspace = (): Promise<BackupResult> => api.backupWorkspace();
