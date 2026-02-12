@@ -4,21 +4,28 @@ A personal document filing cabinet for your desktop. File Harbor is a local-firs
 
 ## Overview
 
-File Harbor works like a digital filing cabinet. When you first launch the app you choose a library folder on disk — this becomes your first **workspace**. You can create additional workspaces to keep different areas of your life separate (e.g. Personal, Work, Side Business). From any workspace you can import documents by dragging them onto the window, using the file picker, or pointing the app at a watched folder for automatic import. Every document lands in your **Inbox** where you can preview it and file it into one of 12 built-in categories:
+File Harbor works like a digital filing cabinet. When you first launch the app you choose a library folder on disk — this becomes your first **workspace**. You can create additional workspaces to keep different areas of your life separate (e.g. Personal, Work, Side Business). From any workspace you can import documents by dragging them onto the window, using the file picker, importing an entire folder, or pointing the app at a watched folder for automatic import. Every document lands in your **Inbox** where you can preview it and file it into one of 14 built-in categories:
 
-**Identity** | **Taxes** | **Banking** | **Insurance** | **Medical** | **Home** | **Work** | **Kids** | **Receipts** | **Legal** | **Utilities** | **Other**
+**Identity** | **Taxes** | **Banking** | **Insurance** | **Medical** | **Home** | **Work** | **Kids** | **Family** | **Receipts** | **Legal** | **Utilities** | **Mail** | **Other**
 
-PDF text is automatically extracted in the background, making your documents searchable by content — not just filename.
+PDF text is automatically extracted in the background, making your documents searchable by content — not just filename. File Harbor can also suggest categories and filenames for new documents using keyword matching or an optional local LLM via Ollama.
 
 ### Key Features
 
 - **Drag-and-drop import** — drop files onto the window to add them
+- **Folder import** — import an entire directory (including subdirectories) via the menu or keyboard shortcut (`Cmd/Ctrl+Shift+I`)
 - **Watched folder** — designate a folder for automatic import (e.g. a Downloads subfolder)
 - **Duplicate detection** — SHA-256 content hashing prevents the same file from being stored twice
 - **Full-text search** — search across filenames and extracted PDF text
 - **In-app preview** — view PDFs, images, and text files without leaving the app
-- **Export and reveal** — export documents back out or reveal them in Finder/Explorer
-- **Category filing** — organize documents into 12 practical life categories
+- **Document renaming** — rename documents directly from the context menu
+- **Smart suggestions** — automatic category and filename suggestions powered by keyword matching on extracted text
+- **Ollama LLM integration** — optionally connect a local Ollama instance for AI-powered category and filename suggestions
+- **Batch filing** — review and accept or dismiss suggestions for multiple documents at once
+- **Export and reveal** — export individual documents or reveal them in Finder/Explorer
+- **Bulk export** — export your entire library organized into category folders with an export manifest
+- **Backup and restore** — back up a workspace (database + files) to a folder, and restore from a previous backup
+- **Category filing** — organize documents into 14 practical life categories
 - **Multiple workspaces** — keep separate libraries for personal, work, and other contexts; switch between them from the sidebar
 - **Local-first** — no accounts, no cloud sync, no telemetry; your data stays on your machine
 
@@ -87,6 +94,7 @@ npm run make      # Create distributable installers
 src/
 ├── main/                    # Electron main process
 │   ├── main.ts              # App entry, window creation, protocol, lifecycle
+│   ├── menu.ts              # Application menu (File, Edit, Window)
 │   ├── ipc-channels.ts      # IPC channel name constants
 │   ├── ipc-handlers.ts      # All IPC handler registrations
 │   ├── lib/
@@ -95,19 +103,24 @@ src/
 │   │   └── logger.ts            # Structured logging
 │   └── services/
 │       ├── database.ts          # SQLite/Drizzle database service
-│       ├── file-service.ts      # File ingestion, export, deletion
+│       ├── file-service.ts      # File ingestion, export, bulk export, deletion
 │       ├── pdf-extractor.ts     # PDF text extraction queue
 │       ├── pdf-worker.ts        # Worker thread for PDF parsing
-│       └── watcher-service.ts   # Watched folder auto-import
+│       ├── watcher-service.ts   # Watched folder auto-import
+│       ├── backup-service.ts    # Workspace backup & restore
+│       ├── keyword-matcher.ts   # Rule-based category suggestion engine
+│       ├── filename-suggester.ts # Filename suggestion from extracted text
+│       ├── llm-suggester.ts     # LLM-powered suggestions via Ollama
+│       └── ollama-service.ts    # Ollama HTTP client
 ├── preload/                 # Context bridge (preload script)
 ├── renderer/                # React UI
 │   ├── components/
 │   │   ├── onboarding/      # Welcome screen & library setup
 │   │   ├── layout/          # Sidebar, TopBar, MainContent, WorkspaceSwitcher
-│   │   ├── inbox/           # DropZone overlay
-│   │   ├── documents/       # DocumentList, DocumentRow, Preview, ContextMenu
+│   │   ├── inbox/           # DropZone overlay, BatchFileDialog
+│   │   ├── documents/       # DocumentList, DocumentRow, Preview, ContextMenu, RenameDialog
 │   │   ├── filing/          # CategoryPicker
-│   │   └── settings/        # SettingsDialog
+│   │   └── settings/        # SettingsDialog, OllamaSettings
 │   ├── stores/              # Zustand state
 │   └── lib/                 # IPC wrappers, utilities
 └── shared/                  # Code shared between main & renderer
@@ -161,18 +174,23 @@ All metadata lives in a single `documents` table inside `db.sqlite`:
 
 ```sql
 CREATE TABLE documents (
-  id                TEXT PRIMARY KEY,        -- UUID v4
-  original_filename TEXT NOT NULL,           -- Name as the user sees it
-  stored_path       TEXT NOT NULL,           -- Relative path: objects/{uuid}.ext
-  mime_type         TEXT NOT NULL,           -- e.g. application/pdf
-  size_bytes        INTEGER NOT NULL,        -- File size
-  added_at          TEXT NOT NULL,           -- ISO 8601 timestamp
-  source            TEXT NOT NULL,           -- 'dragdrop' | 'file_picker' | 'watched_folder'
-  source_path       TEXT,                    -- Original file path before import
-  category          TEXT,                    -- Category name, or NULL for Inbox
-  content_hash      TEXT NOT NULL,           -- SHA-256 hex digest
-  extracted_text    TEXT,                    -- Full text from PDFs (max 100k chars)
-  updated_at        TEXT NOT NULL            -- ISO 8601 timestamp
+  id                      TEXT PRIMARY KEY,        -- UUID v4
+  original_filename       TEXT NOT NULL,           -- Name as the user sees it
+  stored_path             TEXT NOT NULL,           -- Relative path: objects/{uuid}.ext
+  mime_type               TEXT NOT NULL,           -- e.g. application/pdf
+  size_bytes              INTEGER NOT NULL,        -- File size
+  added_at                TEXT NOT NULL,           -- ISO 8601 timestamp
+  source                  TEXT NOT NULL,           -- 'dragdrop' | 'file_picker' | 'watched_folder'
+  source_path             TEXT,                    -- Original file path before import
+  category                TEXT,                    -- Category name, or NULL for Inbox
+  content_hash            TEXT NOT NULL,           -- SHA-256 hex digest
+  extracted_text          TEXT,                    -- Full text from PDFs (max 100k chars)
+  suggested_category      TEXT,                    -- Auto-suggested category
+  suggestion_confidence   REAL,                    -- Confidence score 0.0–1.0
+  suggestion_source       TEXT,                    -- 'keywords' | 'ollama'
+  suggested_filename      TEXT,                    -- Auto-suggested descriptive filename
+  suggestion_outcome      TEXT,                    -- 'accepted' | 'dismissed', or NULL if pending
+  updated_at              TEXT NOT NULL            -- ISO 8601 timestamp
 );
 ```
 
@@ -227,6 +245,15 @@ Source file
 │    If PDF and < 50 MB, queue     │
 │    extraction in Worker thread   │
 │    Result saved to extracted_text│
+└──────────────┬───────────────────┘
+               │
+               ▼
+┌──────────────────────────────────┐
+│ 6. Smart suggestions             │
+│    Run keyword matcher on text   │
+│    If Ollama enabled, also call  │
+│    LLM for category + filename   │
+│    Results saved as suggestions  │
 └──────────────────────────────────┘
 ```
 
@@ -235,6 +262,7 @@ This design ensures:
 - **No partial files** — documents live in `.tmp/` until fully written, then are atomically renamed
 - **No duplicates** — the SHA-256 hash is checked before committing the file
 - **Non-blocking extraction** — PDF text parsing runs in a separate Worker thread so the UI stays responsive
+- **Automatic suggestions** — category and filename suggestions are generated in the background after extraction completes
 
 ### Workspaces
 
@@ -254,6 +282,28 @@ Each workspace can have its own watched folder. The watched folder uses chokidar
 - Ignores dotfiles, `.DS_Store`, Office temp files (`~$`), `.tmp`, `.crdownload`, and `.part` files
 - Waits for a 2-second write stability threshold before processing (so in-progress downloads aren't picked up)
 - Feeds into the same ingestion pipeline described above
+
+### Smart Suggestions
+
+File Harbor can automatically suggest a category and a descriptive filename for newly imported documents. Suggestions are generated in two tiers:
+
+1. **Keyword matching** — a built-in rule engine scans extracted text and filenames for category-specific keywords and regex patterns (e.g. "w-2" → Taxes, "policy number" → Insurance). This runs instantly with no external dependencies.
+2. **Ollama LLM** (optional) — if a local [Ollama](https://ollama.com/) instance is running, File Harbor sends a prompt with the first 2,000 characters of extracted text and asks the model to return a category, confidence score, and suggested filename in `YYYY-MM-DD Description.ext` format. Configure the base URL and model name in Settings.
+
+Filename suggestions are built from dates and known entities (banks, insurers, government agencies, etc.) found in the document text, combined with category context — e.g. `2025-10-15 Chase Statement.pdf`.
+
+Suggestions appear as chips on each document row. You can accept or dismiss them individually, or use the **batch filing** dialog to process all pending suggestions at once. Suggestion outcomes (accepted/dismissed) are tracked so you can review accuracy over time.
+
+### Backup and Restore
+
+Each workspace can be backed up and restored from the File menu:
+
+- **Back Up Workspace** copies `db.sqlite` and the `objects/` directory (excluding temp files) to a user-chosen folder, along with a `backup-meta.json` manifest containing the timestamp, app version, document count, and total size.
+- **Restore from Backup** validates the selected backup folder, then replaces the current workspace's database and files with the backup contents. The app reinitializes after restore.
+
+### Bulk Export
+
+**Export All Files** (File menu) exports every document in the current workspace to a destination folder, organized into subfolders by category (with unfiled documents going into an `Inbox` folder). An `export-manifest.json` is written alongside the exported files containing metadata for each document.
 
 ### Custom Protocol
 
