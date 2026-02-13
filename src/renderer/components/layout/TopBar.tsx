@@ -3,10 +3,14 @@ import { Search, Plus, X, Settings, ChevronDown, FolderOpen, File } from 'lucide
 import { toast } from 'sonner';
 import { useAppStore } from '../../stores/app-store';
 import { SettingsDialog } from '../settings/SettingsDialog';
-import { showIngestToasts } from '../../lib/toast-helpers';
+import type { IngestResult } from '../../../shared/types';
 import * as ipc from '../../lib/ipc';
 
-export function TopBar() {
+interface TopBarProps {
+  onImportComplete?: (results: IngestResult[], skippedCount: number) => void;
+}
+
+export function TopBar({ onImportComplete }: TopBarProps) {
   const searchQuery = useAppStore((s) => s.searchQuery);
   const searchDocuments = useAppStore((s) => s.searchDocuments);
   const clearSearch = useAppStore((s) => s.clearSearch);
@@ -48,7 +52,7 @@ export function TopBar() {
 
     try {
       const { results, skippedCount } = await ipc.ingestFiles(paths, 'file_picker');
-      showIngestToasts(results, skippedCount);
+      if (onImportComplete) onImportComplete(results, skippedCount);
       await loadDocuments();
       await refreshCounts();
     } catch {
@@ -63,7 +67,7 @@ export function TopBar() {
 
     try {
       const { results, skippedCount } = await ipc.ingestFiles(paths, 'file_picker');
-      showIngestToasts(results, skippedCount);
+      if (onImportComplete) onImportComplete(results, skippedCount);
       await loadDocuments();
       await refreshCounts();
     } catch {

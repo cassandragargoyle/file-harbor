@@ -11,9 +11,9 @@ import { ContextMenu, getDocumentActions } from './components/documents/ContextM
 import { DeleteDialog } from './components/documents/DeleteDialog';
 import { RenameDialog } from './components/documents/RenameDialog';
 import { BatchFileDialog } from './components/inbox/BatchFileDialog';
+import { ImportSummaryDialog } from './components/inbox/ImportSummaryDialog';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
-import { showIngestToasts } from './lib/toast-helpers';
-import type { Category, DocumentRecord } from '../shared/types';
+import type { Category, DocumentRecord, IngestResult } from '../shared/types';
 import * as ipc from './lib/ipc';
 
 type AppPhase = 'loading' | 'onboarding' | 'ready';
@@ -33,6 +33,7 @@ export default function App() {
   const [renameDocId, setRenameDocId] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ docId: string; x: number; y: number } | null>(null);
   const [showBatchFile, setShowBatchFile] = useState(false);
+  const [importSummary, setImportSummary] = useState<{ results: IngestResult[]; skippedCount: number } | null>(null);
 
   const selectedDoc: DocumentRecord | undefined = documents.find((d) => d.id === selectedDocumentId);
   const deleteDoc: DocumentRecord | undefined = deleteDocId ? documents.find((d) => d.id === deleteDocId) : undefined;
@@ -68,31 +69,43 @@ export default function App() {
     if (id) setDeleteDocId(id);
   }, [selectedDocumentId]);
 
+  const showImportResult = useCallback((results: IngestResult[], skippedCount: number) => {
+    const success = results.filter((r) => r.status === 'success').length;
+
+    if (results.length === 0 && skippedCount === 0) {
+      toast('No supported files found');
+    } else if (results.length === 1 && success === 1 && skippedCount === 0) {
+      toast.success('1 document imported');
+    } else {
+      setImportSummary({ results, skippedCount });
+    }
+  }, []);
+
   const handleImportAction = useCallback(async () => {
     const paths = await ipc.openFilePicker();
     if (!paths) return;
     try {
       const { results, skippedCount } = await ipc.ingestFiles(paths, 'file_picker');
-      showIngestToasts(results, skippedCount);
+      showImportResult(results, skippedCount);
       await loadDocuments();
       await refreshCounts();
     } catch {
       toast.error('Failed to import files');
     }
-  }, [loadDocuments, refreshCounts]);
+  }, [loadDocuments, refreshCounts, showImportResult]);
 
   const handleImportFolderAction = useCallback(async () => {
     const paths = await ipc.openFolderPicker();
     if (!paths) return;
     try {
       const { results, skippedCount } = await ipc.ingestFiles(paths, 'file_picker');
-      showIngestToasts(results, skippedCount);
+      showImportResult(results, skippedCount);
       await loadDocuments();
       await refreshCounts();
     } catch {
       toast.error('Failed to import folder');
     }
-  }, [loadDocuments, refreshCounts]);
+  }, [loadDocuments, refreshCounts, showImportResult]);
 
   // Subscribe to watcher, menu, and suggestion events
   useEffect(() => {
@@ -308,7 +321,7 @@ export default function App() {
       <div className="flex h-screen bg-base text-foreground">
         <Sidebar />
         <div className="flex flex-1 flex-col overflow-hidden">
-          <TopBar />
+          <TopBar onImportComplete={showImportResult} />
           <MainContent
             onContextMenu={handleContextMenu}
             onFile={handleFileAction}
@@ -323,7 +336,7 @@ export default function App() {
           />
         </div>
       </div>
-      <DropZone />
+      <DropZone onImportComplete={showImportResult} />
 
       {/* Category Picker overlay */}
       {categoryPickerDocId && (
@@ -360,6 +373,15 @@ export default function App() {
         <BatchFileDialog
           onComplete={handleBatchFileComplete}
           onClose={() => setShowBatchFile(false)}
+        />
+      )}
+
+      {/* Import summary */}
+      {importSummary && (
+        <ImportSummaryDialog
+          results={importSummary.results}
+          skippedCount={importSummary.skippedCount}
+          onClose={() => setImportSummary(null)}
         />
       )}
 

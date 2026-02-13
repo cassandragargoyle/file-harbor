@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "A personal document filing cabinet",
   "main": ".vite/build/main.js",
-  "private": true,
+  "license": "MIT",
   "scripts": {
     "start": "electron-rebuild -f -w better-sqlite3 && electron-forge start",
     "package": "electron-forge package",

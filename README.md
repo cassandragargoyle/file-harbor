@@ -315,6 +315,10 @@ file-harbor://objects/{uuid}.{ext}
 
 The protocol handler validates that the requested path starts with `objects/` and resolves within the library directory, preventing directory traversal.
 
+## Contributing
+
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
 ## License
 
-Private — all rights reserved.
+[MIT](LICENSE)

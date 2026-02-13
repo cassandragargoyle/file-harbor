@@ -89,6 +89,7 @@ export function MainContent({ onContextMenu, onFile, onExport, onOpen, onReveal,
 
         <DocumentList
           onContextMenu={onContextMenu}
+          onSelect={(docId) => setPreviewDocument(docId)}
           onDoubleClick={(docId) => setPreviewDocument(docId)}
           onFile={onFile}
           onExport={onExport}

@@ -3,9 +3,13 @@ import { Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import * as ipc from '../../lib/ipc';
 import { useAppStore } from '../../stores/app-store';
-import { showIngestToasts } from '../../lib/toast-helpers';
+import type { IngestResult } from '../../../shared/types';
 
-export function DropZone() {
+interface DropZoneProps {
+  onImportComplete?: (results: IngestResult[], skippedCount: number) => void;
+}
+
+export function DropZone({ onImportComplete }: DropZoneProps) {
   const [isDragging, setIsDragging] = useState(false);
   const dragCounter = useRef(0);
   const loadDocuments = useAppStore((s) => s.loadDocuments);
@@ -46,7 +50,9 @@ export function DropZone() {
       try {
         const { results, skippedCount } = await ipc.ingestFiles(paths, 'dragdrop');
         console.log('[DropZone] results:', results);
-        showIngestToasts(results, skippedCount);
+        if (onImportComplete) {
+          onImportComplete(results, skippedCount);
+        }
         await loadDocuments();
         await refreshCounts();
       } catch {
@@ -65,7 +71,7 @@ export function DropZone() {
       window.removeEventListener('dragover', handleDragOver);
       window.removeEventListener('drop', handleDrop);
     };
-  }, [loadDocuments, refreshCounts]);
+  }, [loadDocuments, refreshCounts, onImportComplete]);
 
   if (!isDragging) return null;
 

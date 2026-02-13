@@ -5,6 +5,7 @@ import { DocumentRow } from './DocumentRow';
 interface DocumentListProps {
   onContextMenu?: (docId: string, x: number, y: number) => void;
   onDoubleClick?: (docId: string) => void;
+  onSelect?: (docId: string) => void;
   onFile?: (docId: string) => void;
   onExport?: (docId: string) => void;
   onOpen?: (docId: string) => void;
@@ -15,7 +16,7 @@ interface DocumentListProps {
   onDismissSuggestion?: (docId: string) => void;
 }
 
-export function DocumentList({ onContextMenu, onDoubleClick, onFile, onExport, onOpen, onReveal, onRename, onDelete, onAcceptSuggestion, onDismissSuggestion }: DocumentListProps) {
+export function DocumentList({ onContextMenu, onDoubleClick, onSelect, onFile, onExport, onOpen, onReveal, onRename, onDelete, onAcceptSuggestion, onDismissSuggestion }: DocumentListProps) {
   const documents = useAppStore((s) => s.documents);
   const selectedDocumentId = useAppStore((s) => s.selectedDocumentId);
   const setSelectedDocument = useAppStore((s) => s.setSelectedDocument);
@@ -37,12 +38,14 @@ export function DocumentList({ onContextMenu, onDoubleClick, onFile, onExport, o
       if (e.key === 'ArrowDown') {
         const next = currentIndex < documents.length - 1 ? currentIndex + 1 : 0;
         setSelectedDocument(documents[next].id);
+        onSelect?.(documents[next].id);
       } else {
         const prev = currentIndex > 0 ? currentIndex - 1 : documents.length - 1;
         setSelectedDocument(documents[prev].id);
+        onSelect?.(documents[prev].id);
       }
     },
-    [documents, selectedDocumentId, setSelectedDocument]
+    [documents, selectedDocumentId, setSelectedDocument, onSelect]
   );
 
   useEffect(() => {
@@ -72,7 +75,7 @@ export function DocumentList({ onContextMenu, onDoubleClick, onFile, onExport, o
           key={doc.id}
           document={doc}
           selected={doc.id === selectedDocumentId}
-          onClick={() => setSelectedDocument(doc.id)}
+          onClick={() => { setSelectedDocument(doc.id); onSelect?.(doc.id); }}
           onDoubleClick={() => onDoubleClick?.(doc.id)}
           onContextMenu={(e) => onContextMenu?.(doc.id, e.clientX, e.clientY)}
           onFile={onFile ? () => onFile(doc.id) : undefined}
