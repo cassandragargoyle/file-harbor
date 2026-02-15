@@ -42,7 +42,18 @@ PDF text is automatically extracted in the background, making your documents sea
 | `.md` | `text/markdown` |
 | `.docx` | `application/vnd.openxmlformats-officedocument.wordprocessingml.document` |
 
-## Getting Started
+## Downloads
+
+Pre-built installers are available from the [latest release](https://github.com/adamgoth/file-harbor/releases/latest):
+
+| Platform | File | Notes |
+|----------|------|-------|
+| **macOS** | `File.Harbor-x.x.x-darwin-x64.zip` | Extract the ZIP and move **File Harbor.app** to your Applications folder |
+| **Windows** | `File.Harbor-x.x.x.Setup.exe` | Run the installer — the app auto-launches when finished |
+
+> Releases are created as drafts. Check the [Releases page](https://github.com/adamgoth/file-harbor/releases) for all available versions.
+
+## Getting Started (Development)
 
 ### Prerequisites
 
@@ -69,6 +80,27 @@ This launches the app in development mode with hot-reload via Vite.
 npm run package   # Package for current platform
 npm run make      # Create distributable installers
 ```
+
+### Creating a Release
+
+First, copy the release workflow into your repository:
+
+```bash
+mkdir -p .github/workflows
+cp docs/release-workflow.yml .github/workflows/release.yml
+git add .github/workflows/release.yml
+git commit -m "Add release workflow"
+git push
+```
+
+Then tag and push to trigger a build:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The GitHub Actions workflow builds installers for macOS and Windows and creates a draft release with the artifacts attached. Review and publish the draft from the [Releases page](https://github.com/adamgoth/file-harbor/releases).
 
 ## Tech Stack
 
