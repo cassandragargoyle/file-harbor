@@ -49,7 +49,15 @@ Pre-built installers are available from the [latest release](https://github.com/
 
 | Platform    | File                               | Notes                                                                  |
 | ----------- | ---------------------------------- | ---------------------------------------------------------------------- |
-| **macOS**   | [`File.Harbor-darwin-arm64-0.1.0.dmg`](https://github.com/adamgoth/file-harbor/releases/latest/download/File.Harbor-darwin-arm64-0.1.0.dmg) | Open the DMG and drag **File Harbor** to your Applications folder |
+| **macOS**   | [`File Harbor-0.1.0-arm64.dmg`](https://github.com/adamgoth/file-harbor/releases/latest/download/File.Harbor-0.1.0-arm64.dmg) | Open the DMG and drag **File Harbor** to your Applications folder |
+
+> **macOS Gatekeeper note:** Since the app is not code-signed, macOS may show a "damaged" warning. After copying to Applications, run:
+>
+> ```bash
+> xattr -cr "/Applications/File Harbor.app"
+> ```
+>
+> Then open the app normally.
 
 > Releases are created as drafts. Check the [Releases page](https://github.com/adamgoth/file-harbor/releases) for all available versions.
 
