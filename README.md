@@ -47,9 +47,9 @@ PDF text is automatically extracted in the background, making your documents sea
 
 Pre-built installers are available from the [latest release](https://github.com/adamgoth/file-harbor/releases/latest):
 
-| Platform    | File                               | Notes                                                                    |
-| ----------- | ---------------------------------- | ------------------------------------------------------------------------ |
-| **macOS**   | `File.Harbor-x.x.x-darwin-x64.zip` | Extract the ZIP and move **File Harbor.app** to your Applications folder |
+| Platform    | File                               | Notes                                                                  |
+| ----------- | ---------------------------------- | ---------------------------------------------------------------------- |
+| **macOS**   | [`File.Harbor-darwin-arm64-0.1.0.dmg`](https://github.com/adamgoth/file-harbor/releases/latest/download/File.Harbor-darwin-arm64-0.1.0.dmg) | Open the DMG and drag **File Harbor** to your Applications folder |
 
 > Releases are created as drafts. Check the [Releases page](https://github.com/adamgoth/file-harbor/releases) for all available versions.
 
