@@ -50,7 +50,6 @@ Pre-built installers are available from the [latest release](https://github.com/
 | Platform    | File                               | Notes                                                                    |
 | ----------- | ---------------------------------- | ------------------------------------------------------------------------ |
 | **macOS**   | `File.Harbor-x.x.x-darwin-x64.zip` | Extract the ZIP and move **File Harbor.app** to your Applications folder |
-| **Windows** | `File.Harbor-x.x.x.Setup.exe`      | Run the installer — the app auto-launches when finished                  |
 
 > Releases are created as drafts. Check the [Releases page](https://github.com/adamgoth/file-harbor/releases) for all available versions.
 
