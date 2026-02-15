@@ -12,6 +12,8 @@ function getFileIcon(mimeType: string) {
 export function DocumentRow({
   document,
   selected,
+  multiSelected,
+  isMultiSelecting,
   onClick,
   onDoubleClick,
   onContextMenu,
@@ -26,7 +28,9 @@ export function DocumentRow({
 }: {
   document: DocumentRecord;
   selected: boolean;
-  onClick: () => void;
+  multiSelected?: boolean;
+  isMultiSelecting?: boolean;
+  onClick: (e: React.MouseEvent) => void;
   onDoubleClick?: () => void;
   onContextMenu?: (e: React.MouseEvent) => void;
   onFile?: () => void;
@@ -40,7 +44,8 @@ export function DocumentRow({
 }) {
   const Icon = getFileIcon(document.mime_type);
 
-  const actionVisibility = selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100';
+  const isHighlighted = multiSelected || (!isMultiSelecting && selected);
+  const actionVisibility = !isMultiSelecting && selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100';
 
   const hasSuggestion =
     document.suggested_category &&
@@ -53,13 +58,17 @@ export function DocumentRow({
       onDoubleClick={onDoubleClick}
       onContextMenu={(e) => {
         e.preventDefault();
-        onClick(); // select on right-click too
+        onClick(e); // select on right-click too
         onContextMenu?.(e);
       }}
       data-document-id={document.id}
       className={cn(
         'group flex w-full items-center gap-3 border-b border-border/50 px-4 py-3 text-left transition-colors',
-        selected ? 'bg-elevated' : 'hover:bg-elevated/30'
+        multiSelected
+          ? 'bg-accent/10'
+          : isHighlighted
+            ? 'bg-elevated'
+            : 'hover:bg-elevated/30'
       )}
     >
       <Icon className="h-5 w-5 shrink-0 text-faint" />
@@ -84,7 +93,7 @@ export function DocumentRow({
           )}
         </div>
       </div>
-      <div className={cn('flex shrink-0 items-center gap-0.5 transition-opacity', actionVisibility)}>
+      <div className={cn('flex shrink-0 items-center gap-0.5 transition-opacity', isMultiSelecting ? 'hidden' : actionVisibility)}>
         {onFile && (
           <RowAction icon={FolderInput} label="File to..." onClick={onFile} />
         )}

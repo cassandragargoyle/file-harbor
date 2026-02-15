@@ -5,6 +5,8 @@ interface ShortcutActions {
   onPreview: () => void;
   onDelete: () => void;
   onImport: () => void;
+  onSelectAll?: () => void;
+  onClearSelection?: () => void;
 }
 
 export function useKeyboardShortcuts(actions: ShortcutActions) {
@@ -15,6 +17,16 @@ export function useKeyboardShortcuts(actions: ShortcutActions) {
       if (tag === 'INPUT' || tag === 'TEXTAREA' || target.isContentEditable) return;
 
       switch (e.key) {
+        case 'a':
+        case 'A':
+          if (e.metaKey || e.ctrlKey) {
+            e.preventDefault();
+            actions.onSelectAll?.();
+          }
+          break;
+        case 'Escape':
+          actions.onClearSelection?.();
+          break;
         case 'f':
         case 'F':
           e.preventDefault();

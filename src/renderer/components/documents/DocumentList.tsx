@@ -19,11 +19,16 @@ interface DocumentListProps {
 export function DocumentList({ onContextMenu, onDoubleClick, onSelect, onFile, onExport, onOpen, onReveal, onRename, onDelete, onAcceptSuggestion, onDismissSuggestion }: DocumentListProps) {
   const documents = useAppStore((s) => s.documents);
   const selectedDocumentId = useAppStore((s) => s.selectedDocumentId);
+  const selectedDocumentIds = useAppStore((s) => s.selectedDocumentIds);
   const setSelectedDocument = useAppStore((s) => s.setSelectedDocument);
+  const toggleDocumentSelection = useAppStore((s) => s.toggleDocumentSelection);
+  const rangeSelectDocuments = useAppStore((s) => s.rangeSelectDocuments);
   const isLoading = useAppStore((s) => s.isLoading);
   const currentView = useAppStore((s) => s.currentView);
   const isSearching = useAppStore((s) => s.isSearching);
   const searchQuery = useAppStore((s) => s.searchQuery);
+
+  const isMultiSelecting = selectedDocumentIds.length > 0;
 
   // Keyboard navigation
   const handleKeyDown = useCallback(
@@ -75,7 +80,18 @@ export function DocumentList({ onContextMenu, onDoubleClick, onSelect, onFile, o
           key={doc.id}
           document={doc}
           selected={doc.id === selectedDocumentId}
-          onClick={() => { setSelectedDocument(doc.id); onSelect?.(doc.id); }}
+          multiSelected={isMultiSelecting && selectedDocumentIds.includes(doc.id)}
+          isMultiSelecting={isMultiSelecting}
+          onClick={(e: React.MouseEvent) => {
+            if (e.metaKey || e.ctrlKey) {
+              toggleDocumentSelection(doc.id);
+            } else if (e.shiftKey) {
+              rangeSelectDocuments(doc.id);
+            } else {
+              setSelectedDocument(doc.id);
+              onSelect?.(doc.id);
+            }
+          }}
           onDoubleClick={() => onDoubleClick?.(doc.id)}
           onContextMenu={(e) => onContextMenu?.(doc.id, e.clientX, e.clientY)}
           onFile={onFile ? () => onFile(doc.id) : undefined}

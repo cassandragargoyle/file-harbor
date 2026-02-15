@@ -21,6 +21,7 @@ PDF text is automatically extracted in the background, making your documents sea
 - **Document renaming** — rename documents directly from the context menu
 - **Smart suggestions** — automatic category and filename suggestions powered by keyword matching on extracted text
 - **Ollama LLM integration** — optionally connect a local Ollama instance for AI-powered category and filename suggestions
+- **Multi-select** — Cmd/Ctrl-click to toggle, Shift-click to range-select, Cmd/Ctrl-A to select all; bulk file, export, or delete in one action
 - **Batch filing** — review and accept or dismiss suggestions for multiple documents at once
 - **Export and reveal** — export individual documents or reveal them in Finder/Explorer
 - **Bulk export** — export your entire library organized into category folders with an export manifest
@@ -31,25 +32,25 @@ PDF text is automatically extracted in the background, making your documents sea
 
 ### Supported File Types
 
-| Extension | MIME Type |
-|-----------|-----------|
-| `.pdf` | `application/pdf` |
-| `.png` | `image/png` |
-| `.jpg` / `.jpeg` | `image/jpeg` |
-| `.gif` | `image/gif` |
-| `.webp` | `image/webp` |
-| `.txt` | `text/plain` |
-| `.md` | `text/markdown` |
-| `.docx` | `application/vnd.openxmlformats-officedocument.wordprocessingml.document` |
+| Extension        | MIME Type                                                                 |
+| ---------------- | ------------------------------------------------------------------------- |
+| `.pdf`           | `application/pdf`                                                         |
+| `.png`           | `image/png`                                                               |
+| `.jpg` / `.jpeg` | `image/jpeg`                                                              |
+| `.gif`           | `image/gif`                                                               |
+| `.webp`          | `image/webp`                                                              |
+| `.txt`           | `text/plain`                                                              |
+| `.md`            | `text/markdown`                                                           |
+| `.docx`          | `application/vnd.openxmlformats-officedocument.wordprocessingml.document` |
 
 ## Downloads
 
 Pre-built installers are available from the [latest release](https://github.com/adamgoth/file-harbor/releases/latest):
 
-| Platform | File | Notes |
-|----------|------|-------|
-| **macOS** | `File.Harbor-x.x.x-darwin-x64.zip` | Extract the ZIP and move **File Harbor.app** to your Applications folder |
-| **Windows** | `File.Harbor-x.x.x.Setup.exe` | Run the installer — the app auto-launches when finished |
+| Platform    | File                               | Notes                                                                    |
+| ----------- | ---------------------------------- | ------------------------------------------------------------------------ |
+| **macOS**   | `File.Harbor-x.x.x-darwin-x64.zip` | Extract the ZIP and move **File Harbor.app** to your Applications folder |
+| **Windows** | `File.Harbor-x.x.x.Setup.exe`      | Run the installer — the app auto-launches when finished                  |
 
 > Releases are created as drafts. Check the [Releases page](https://github.com/adamgoth/file-harbor/releases) for all available versions.
 
@@ -104,21 +105,21 @@ The GitHub Actions workflow builds installers for macOS and Windows and creates 
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|------------|
-| Framework | [Electron](https://www.electronjs.org/) (v35) with Electron Forge |
-| Bundler | [Vite](https://vitejs.dev/) via `@electron-forge/plugin-vite` |
-| Language | TypeScript throughout (main, preload, renderer, shared) |
-| UI | [React 19](https://react.dev/) with [Tailwind CSS v4](https://tailwindcss.com/) |
-| State | [Zustand](https://zustand-demo.pmnd.rs/) |
-| Database | [SQLite](https://sqlite.org/) via [better-sqlite3](https://github.com/WiseLibs/better-sqlite3) |
-| ORM | [Drizzle ORM](https://orm.drizzle.team/) |
-| File watcher | [chokidar](https://github.com/paulmillr/chokidar) |
-| PDF extraction | [unpdf](https://github.com/unjs/unpdf) in a Worker thread |
-| Icons | [Lucide React](https://lucide.dev/) |
-| Toasts | [Sonner](https://sonner.emilkowal.dev/) |
-| Command palette | [cmdk](https://cmdk.paco.me/) |
-| Logging | [electron-log](https://github.com/megahertz/electron-log) |
+| Layer           | Technology                                                                                     |
+| --------------- | ---------------------------------------------------------------------------------------------- |
+| Framework       | [Electron](https://www.electronjs.org/) (v35) with Electron Forge                              |
+| Bundler         | [Vite](https://vitejs.dev/) via `@electron-forge/plugin-vite`                                  |
+| Language        | TypeScript throughout (main, preload, renderer, shared)                                        |
+| UI              | [React 19](https://react.dev/) with [Tailwind CSS v4](https://tailwindcss.com/)                |
+| State           | [Zustand](https://zustand-demo.pmnd.rs/)                                                       |
+| Database        | [SQLite](https://sqlite.org/) via [better-sqlite3](https://github.com/WiseLibs/better-sqlite3) |
+| ORM             | [Drizzle ORM](https://orm.drizzle.team/)                                                       |
+| File watcher    | [chokidar](https://github.com/paulmillr/chokidar)                                              |
+| PDF extraction  | [unpdf](https://github.com/unjs/unpdf) in a Worker thread                                      |
+| Icons           | [Lucide React](https://lucide.dev/)                                                            |
+| Toasts          | [Sonner](https://sonner.emilkowal.dev/)                                                        |
+| Command palette | [cmdk](https://cmdk.paco.me/)                                                                  |
+| Logging         | [electron-log](https://github.com/megahertz/electron-log)                                      |
 
 ### Project Structure
 
@@ -228,11 +229,11 @@ CREATE TABLE documents (
 
 Three indexes support fast queries:
 
-| Index | Column | Purpose |
-|-------|--------|---------|
-| `idx_documents_category` | `category` | Sidebar category counts and filtering |
-| `idx_documents_content_hash` | `content_hash` | Duplicate detection on import |
-| `idx_documents_added_at` | `added_at` | Recent-first ordering |
+| Index                        | Column         | Purpose                               |
+| ---------------------------- | -------------- | ------------------------------------- |
+| `idx_documents_category`     | `category`     | Sidebar category counts and filtering |
+| `idx_documents_content_hash` | `content_hash` | Duplicate detection on import         |
+| `idx_documents_added_at`     | `added_at`     | Recent-first ordering                 |
 
 The database runs in **WAL mode** (Write-Ahead Logging) for safe concurrent reads during background PDF extraction.
 

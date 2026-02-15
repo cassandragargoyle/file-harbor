@@ -9,6 +9,7 @@ import { DropZone } from './components/inbox/DropZone';
 import { CategoryPicker } from './components/filing/CategoryPicker';
 import { ContextMenu, getDocumentActions } from './components/documents/ContextMenu';
 import { DeleteDialog } from './components/documents/DeleteDialog';
+import { BulkActionBar } from './components/documents/BulkActionBar';
 import { RenameDialog } from './components/documents/RenameDialog';
 import { BatchFileDialog } from './components/inbox/BatchFileDialog';
 import { ImportSummaryDialog } from './components/inbox/ImportSummaryDialog';
@@ -24,6 +25,9 @@ export default function App() {
   const loadDocuments = useAppStore((s) => s.loadDocuments);
   const refreshCounts = useAppStore((s) => s.refreshCounts);
   const selectedDocumentId = useAppStore((s) => s.selectedDocumentId);
+  const selectedDocumentIds = useAppStore((s) => s.selectedDocumentIds);
+  const selectAllDocuments = useAppStore((s) => s.selectAllDocuments);
+  const clearSelection = useAppStore((s) => s.clearSelection);
   const documents = useAppStore((s) => s.documents);
   const setPreviewDocument = useAppStore((s) => s.setPreviewDocument);
 
@@ -33,6 +37,8 @@ export default function App() {
   const [renameDocId, setRenameDocId] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ docId: string; x: number; y: number } | null>(null);
   const [showBatchFile, setShowBatchFile] = useState(false);
+  const [bulkDeleteIds, setBulkDeleteIds] = useState<string[] | null>(null);
+  const [bulkCategoryPickerIds, setBulkCategoryPickerIds] = useState<string[] | null>(null);
   const [importSummary, setImportSummary] = useState<{ results: IngestResult[]; skippedCount: number } | null>(null);
 
   const selectedDoc: DocumentRecord | undefined = documents.find((d) => d.id === selectedDocumentId);
@@ -266,15 +272,86 @@ export default function App() {
     setDeleteDocId(null);
   }, [deleteDocId, selectedDocumentId, loadDocuments, refreshCounts, setPreviewDocument]);
 
+  // ── Bulk action handlers ─────────────────────────────────
+  const handleBulkFileAction = useCallback(() => {
+    if (selectedDocumentIds.length > 0) {
+      setBulkCategoryPickerIds([...selectedDocumentIds]);
+    }
+  }, [selectedDocumentIds]);
+
+  const handleBulkCategorySelect = useCallback(async (category: Category | null) => {
+    if (!bulkCategoryPickerIds) return;
+    try {
+      const result = await ipc.batchUpdateCategory(bulkCategoryPickerIds, category);
+      toast.success(
+        category
+          ? `Filed ${result.updated} ${result.updated === 1 ? 'document' : 'documents'} to ${category}`
+          : `Moved ${result.updated} ${result.updated === 1 ? 'document' : 'documents'} to Inbox`
+      );
+      clearSelection();
+      await loadDocuments();
+      await refreshCounts();
+    } catch {
+      toast.error('Failed to file documents');
+    }
+    setBulkCategoryPickerIds(null);
+  }, [bulkCategoryPickerIds, clearSelection, loadDocuments, refreshCounts]);
+
+  const handleBulkExportAction = useCallback(async () => {
+    if (selectedDocumentIds.length === 0) return;
+    try {
+      const result = await ipc.batchExportDocuments(selectedDocumentIds);
+      if (result.success) {
+        toast.success(`Exported ${result.exported} ${result.exported === 1 ? 'document' : 'documents'}`);
+        if (result.failed && result.failed > 0) {
+          toast.error(`${result.failed} files could not be exported`);
+        }
+        clearSelection();
+      } else if (result.error) {
+        toast.error(`Export failed: ${result.error}`);
+      }
+    } catch {
+      toast.error('Failed to export documents');
+    }
+  }, [selectedDocumentIds, clearSelection]);
+
+  const handleBulkDeleteAction = useCallback(() => {
+    if (selectedDocumentIds.length > 0) {
+      setBulkDeleteIds([...selectedDocumentIds]);
+    }
+  }, [selectedDocumentIds]);
+
+  const handleBulkDeleteConfirm = useCallback(async () => {
+    if (!bulkDeleteIds) return;
+    try {
+      const result = await ipc.batchDeleteDocuments(bulkDeleteIds);
+      toast.success(`Deleted ${result.deleted} ${result.deleted === 1 ? 'document' : 'documents'}`);
+      // Clear preview if deleting the previewed doc
+      const previewId = useAppStore.getState().previewDocumentId;
+      if (previewId && bulkDeleteIds.includes(previewId)) {
+        setPreviewDocument(null);
+      }
+      clearSelection();
+      useAppStore.getState().setSelectedDocument(null);
+      await loadDocuments();
+      await refreshCounts();
+    } catch {
+      toast.error('Failed to delete documents');
+    }
+    setBulkDeleteIds(null);
+  }, [bulkDeleteIds, clearSelection, loadDocuments, refreshCounts, setPreviewDocument]);
+
   // ── Keyboard shortcuts ─────────────────────────────────────
   const shortcutActions = useMemo(
     () => ({
       onFile: () => handleFileAction(),
       onPreview: () => handlePreviewAction(),
-      onDelete: () => handleDeleteAction(),
+      onDelete: () => selectedDocumentIds.length > 0 ? handleBulkDeleteAction() : handleDeleteAction(),
       onImport: handleImportAction,
+      onSelectAll: selectAllDocuments,
+      onClearSelection: clearSelection,
     }),
-    [handleFileAction, handlePreviewAction, handleDeleteAction, handleImportAction]
+    [handleFileAction, handlePreviewAction, handleDeleteAction, handleBulkDeleteAction, handleImportAction, selectedDocumentIds.length, selectAllDocuments, clearSelection]
   );
   useKeyboardShortcuts(shortcutActions);
 
@@ -338,12 +415,31 @@ export default function App() {
       </div>
       <DropZone onImportComplete={showImportResult} />
 
-      {/* Category Picker overlay */}
+      {/* Bulk action bar */}
+      {selectedDocumentIds.length > 0 && (
+        <BulkActionBar
+          count={selectedDocumentIds.length}
+          onFile={handleBulkFileAction}
+          onExport={handleBulkExportAction}
+          onDelete={handleBulkDeleteAction}
+          onClear={clearSelection}
+        />
+      )}
+
+      {/* Category Picker overlay (single) */}
       {categoryPickerDocId && (
         <CategoryPicker
           onSelect={handleCategorySelect}
           onClose={() => setCategoryPickerDocId(null)}
           suggestedCategory={documents.find((d) => d.id === categoryPickerDocId)?.suggested_category ?? undefined}
+        />
+      )}
+
+      {/* Category Picker overlay (bulk) */}
+      {bulkCategoryPickerIds && (
+        <CategoryPicker
+          onSelect={handleBulkCategorySelect}
+          onClose={() => setBulkCategoryPickerIds(null)}
         />
       )}
 
@@ -385,12 +481,21 @@ export default function App() {
         />
       )}
 
-      {/* Delete confirmation */}
+      {/* Delete confirmation (single) */}
       {deleteDoc && (
         <DeleteDialog
           filename={deleteDoc.original_filename}
           onConfirm={handleDeleteConfirm}
           onCancel={() => setDeleteDocId(null)}
+        />
+      )}
+
+      {/* Delete confirmation (bulk) */}
+      {bulkDeleteIds && (
+        <DeleteDialog
+          count={bulkDeleteIds.length}
+          onConfirm={handleBulkDeleteConfirm}
+          onCancel={() => setBulkDeleteIds(null)}
         />
       )}
 

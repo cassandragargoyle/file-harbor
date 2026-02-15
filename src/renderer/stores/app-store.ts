@@ -19,6 +19,8 @@ interface AppState {
   // Documents
   documents: DocumentRecord[];
   selectedDocumentId: string | null;
+  selectedDocumentIds: string[];
+  lastClickedDocId: string | null;
   sortBy: 'date' | 'name';
 
   // Preview
@@ -40,6 +42,10 @@ interface AppState {
   loadDocuments: () => Promise<void>;
   refreshCounts: () => Promise<void>;
   setSelectedDocument: (id: string | null) => void;
+  toggleDocumentSelection: (id: string) => void;
+  rangeSelectDocuments: (id: string) => void;
+  selectAllDocuments: () => void;
+  clearSelection: () => void;
   setPreviewDocument: (id: string | null) => void;
   setSortBy: (sort: 'date' | 'name') => void;
   searchDocuments: (query: string) => Promise<void>;
@@ -61,6 +67,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   currentView: 'inbox',
   documents: [],
   selectedDocumentId: null,
+  selectedDocumentIds: [],
+  lastClickedDocId: null,
   sortBy: 'date',
   previewDocumentId: null,
   searchQuery: '',
@@ -71,7 +79,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   setLibraryPath: (path) => set({ libraryPath: path }),
 
   setCurrentView: async (view) => {
-    set({ currentView: view, selectedDocumentId: null, previewDocumentId: null, searchQuery: '', isSearching: false });
+    set({ currentView: view, selectedDocumentId: null, selectedDocumentIds: [], lastClickedDocId: null, previewDocumentId: null, searchQuery: '', isSearching: false });
     ipc.saveLastView(view); // fire-and-forget
     await get().loadDocuments();
   },
@@ -103,7 +111,46 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
-  setSelectedDocument: (id) => set({ selectedDocumentId: id }),
+  setSelectedDocument: (id) => set({ selectedDocumentId: id, selectedDocumentIds: [], lastClickedDocId: id }),
+
+  toggleDocumentSelection: (id) => {
+    const { selectedDocumentIds, selectedDocumentId } = get();
+    // First cmd-click: start multi-select including the currently selected doc
+    if (selectedDocumentIds.length === 0 && selectedDocumentId) {
+      const ids = selectedDocumentId === id ? [] : [selectedDocumentId, id];
+      set({ selectedDocumentIds: ids, lastClickedDocId: id });
+    } else {
+      const next = selectedDocumentIds.includes(id)
+        ? selectedDocumentIds.filter((i) => i !== id)
+        : [...selectedDocumentIds, id];
+      set({ selectedDocumentIds: next, lastClickedDocId: id });
+    }
+  },
+
+  rangeSelectDocuments: (id) => {
+    const { documents, lastClickedDocId, selectedDocumentIds, selectedDocumentId } = get();
+    const anchorId = lastClickedDocId ?? selectedDocumentId;
+    if (!anchorId) {
+      set({ selectedDocumentIds: [id], lastClickedDocId: id });
+      return;
+    }
+    const anchorIdx = documents.findIndex((d) => d.id === anchorId);
+    const targetIdx = documents.findIndex((d) => d.id === id);
+    if (anchorIdx === -1 || targetIdx === -1) return;
+    const start = Math.min(anchorIdx, targetIdx);
+    const end = Math.max(anchorIdx, targetIdx);
+    const rangeIds = documents.slice(start, end + 1).map((d) => d.id);
+    // Merge with existing selection
+    const merged = [...new Set([...selectedDocumentIds, ...rangeIds])];
+    set({ selectedDocumentIds: merged });
+  },
+
+  selectAllDocuments: () => {
+    const { documents } = get();
+    set({ selectedDocumentIds: documents.map((d) => d.id) });
+  },
+
+  clearSelection: () => set({ selectedDocumentIds: [], lastClickedDocId: null }),
 
   setPreviewDocument: (id) => set({ previewDocumentId: id }),
 

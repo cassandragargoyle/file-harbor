@@ -317,6 +317,81 @@ export function registerIpcHandlers(
     }
   });
 
+  ipcMain.handle(IPC_CHANNELS.DOCUMENTS_BATCH_DELETE, async (_event, ids: string[]) => {
+    try {
+      if (!state.db || !state.libraryPath) return { deleted: 0 };
+      let deleted = 0;
+      for (const id of ids) {
+        const doc = state.db.getDocument(id);
+        if (doc) {
+          await deleteStoredFile(state.libraryPath, doc.stored_path);
+          state.db.deleteDocument(id);
+          deleted++;
+        }
+      }
+      return { deleted };
+    } catch (err) {
+      ipcLog.error('DOCUMENTS_BATCH_DELETE failed:', err);
+      return { deleted: 0 };
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.DOCUMENTS_BATCH_EXPORT, async (_event, ids: string[]) => {
+    try {
+      if (!state.db || !state.libraryPath) return { success: false, error: 'No workspace open' };
+      if (ids.length === 0) return { success: false, error: 'No documents selected' };
+
+      const result = await dialog.showOpenDialog({
+        title: 'Choose Export Destination',
+        properties: ['openDirectory', 'createDirectory'],
+      });
+      if (result.canceled || result.filePaths.length === 0) {
+        return { success: false };
+      }
+
+      const destDir = result.filePaths[0];
+      let exported = 0;
+      let failed = 0;
+
+      for (const id of ids) {
+        const doc = state.db.getDocument(id);
+        if (!doc) { failed++; continue; }
+        try {
+          await exportFile(state.libraryPath, doc.stored_path, path.join(destDir, doc.original_filename));
+          exported++;
+        } catch {
+          failed++;
+        }
+      }
+
+      return { success: true, exported, failed };
+    } catch (err) {
+      ipcLog.error('DOCUMENTS_BATCH_EXPORT failed:', err);
+      return { success: false, error: err instanceof Error ? err.message : String(err) };
+    }
+  });
+
+  ipcMain.handle(
+    IPC_CHANNELS.DOCUMENTS_BATCH_UPDATE_CATEGORY,
+    (_event, ids: string[], category: Category | null) => {
+      try {
+        if (!state.db) return { updated: 0 };
+        let updated = 0;
+        for (const id of ids) {
+          const doc = state.db.getDocument(id);
+          if (doc) {
+            state.db.updateDocumentCategory(id, category);
+            updated++;
+          }
+        }
+        return { updated };
+      } catch (err) {
+        ipcLog.error('DOCUMENTS_BATCH_UPDATE_CATEGORY failed:', err);
+        return { updated: 0 };
+      }
+    }
+  );
+
   ipcMain.handle(IPC_CHANNELS.DOCUMENTS_SEARCH, (_event, query: string) => {
     try {
       if (!state.db) return [];

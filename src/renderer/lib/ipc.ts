@@ -36,6 +36,12 @@ export const getDocumentFilePath = (id: string): Promise<string | null> =>
   api.getDocumentFilePath(id);
 export const exportDocument = (id: string): Promise<boolean> => api.exportDocument(id);
 export const exportAllDocuments = (): Promise<ExportAllResult> => api.exportAllDocuments();
+export const batchDeleteDocuments = (ids: string[]): Promise<{ deleted: number }> =>
+  api.batchDeleteDocuments(ids);
+export const batchExportDocuments = (ids: string[]): Promise<{ success: boolean; exported?: number; failed?: number; error?: string }> =>
+  api.batchExportDocuments(ids);
+export const batchUpdateCategory = (ids: string[], category: Category | null): Promise<{ updated: number }> =>
+  api.batchUpdateCategory(ids, category);
 export const revealInFinder = (id: string) => api.revealInFinder(id);
 export const getDocumentCounts = (): Promise<DocumentCounts | null> => api.getDocumentCounts();
 export const openFilePicker = (): Promise<string[] | null> => api.openFilePicker();

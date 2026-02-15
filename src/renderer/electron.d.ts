@@ -17,6 +17,9 @@ interface ElectronAPI {
   getDocumentFilePath: (id: string) => Promise<string | null>;
   exportDocument: (id: string) => Promise<boolean>;
   exportAllDocuments: () => Promise<ExportAllResult>;
+  batchDeleteDocuments: (ids: string[]) => Promise<{ deleted: number }>;
+  batchExportDocuments: (ids: string[]) => Promise<{ success: boolean; exported?: number; failed?: number; error?: string }>;
+  batchUpdateCategory: (ids: string[], category: Category | null) => Promise<{ updated: number }>;
   revealInFinder: (id: string) => Promise<void>;
   getDocumentCounts: () => Promise<DocumentCounts | null>;
   openFilePicker: () => Promise<string[] | null>;
