@@ -84,17 +84,7 @@ npm run make      # Create distributable installers
 
 ### Creating a Release
 
-First, copy the release workflow into your repository:
-
-```bash
-mkdir -p .github/workflows
-cp docs/release-workflow.yml .github/workflows/release.yml
-git add .github/workflows/release.yml
-git commit -m "Add release workflow"
-git push
-```
-
-Then tag and push to trigger a build:
+Tag and push to trigger a build:
 
 ```bash
 git tag v0.1.0
