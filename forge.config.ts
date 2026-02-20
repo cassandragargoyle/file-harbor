@@ -8,14 +8,33 @@ import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { AutoUnpackNativesPlugin } from '@electron-forge/plugin-auto-unpack-natives';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
 import path from 'path';
+import fs from 'fs';
+
+function copyNativeModules(buildPath: string) {
+  const modules = ['better-sqlite3', 'bindings', 'file-uri-to-path'];
+  for (const mod of modules) {
+    const src = path.resolve(__dirname, 'node_modules', mod);
+    const dest = path.resolve(buildPath, 'node_modules', mod);
+    if (fs.existsSync(src)) {
+      fs.cpSync(src, dest, { recursive: true });
+    }
+  }
+}
 
 const config: ForgeConfig = {
   packagerConfig: {
     name: 'File Harbor',
-    asar: true,
+    asar: {
+      unpack: '{**/better-sqlite3/**,**/bindings/**,**/file-uri-to-path/**}',
+    },
     icon: path.resolve(__dirname, 'assets', 'icon'),
     extraResource: ['./drizzle'],
     ...(process.env.APPLE_ID ? { osxSign: {} } : {}),
+  },
+  hooks: {
+    packageAfterCopy: async (_config, buildPath) => {
+      copyNativeModules(buildPath);
+    },
   },
   rebuildConfig: {},
   makers: [
