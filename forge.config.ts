@@ -15,14 +15,7 @@ const config: ForgeConfig = {
     asar: true,
     icon: path.resolve(__dirname, 'assets', 'icon'),
     extraResource: ['./drizzle'],
-    ...(process.env.APPLE_ID ? {
-      osxSign: {},
-      osxNotarize: {
-        appleId: process.env.APPLE_ID,
-        appleIdPassword: process.env.APPLE_ID_PASSWORD!,
-        teamId: process.env.APPLE_TEAM_ID!,
-      },
-    } : {}),
+    ...(process.env.APPLE_ID ? { osxSign: {} } : {}),
   },
   rebuildConfig: {},
   makers: [
