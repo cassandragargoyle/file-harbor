@@ -32,7 +32,13 @@ describe('relativeTime', () => {
 
   it('returns formatted date for 7+ days in the same year', () => {
     const result = relativeTime('2025-01-10T12:00:00Z');
-    expect(result).toContain('Jan');
+    // Month name is rendered in the runtime's locale, so compare against that
+    // rather than hardcoding English ("Jan" vs "10. 1." under cs-CZ).
+    const expected = new Date('2025-01-10T12:00:00Z').toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+    });
+    expect(result).toBe(expected);
     expect(result).toContain('10');
     // Should NOT include year since it's the same year
     expect(result).not.toContain('2025');

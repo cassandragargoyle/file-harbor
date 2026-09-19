@@ -8,8 +8,8 @@ import {
 } from './constants';
 
 describe('CATEGORIES', () => {
-  it('contains exactly 13 categories', () => {
-    expect(CATEGORIES).toHaveLength(13);
+  it('contains exactly 14 categories', () => {
+    expect(CATEGORIES).toHaveLength(14);
   });
 
   it('has no duplicates', () => {
@@ -20,7 +20,7 @@ describe('CATEGORIES', () => {
   it('contains all expected category names', () => {
     const expected = [
       'Identity', 'Taxes', 'Banking', 'Insurance', 'Medical', 'Home',
-      'Work', 'Kids', 'Receipts', 'Legal', 'Utilities', 'Mail', 'Other',
+      'Work', 'Kids', 'Family', 'Receipts', 'Legal', 'Utilities', 'Mail', 'Other',
     ];
     expect(CATEGORIES).toEqual(expected);
   });
