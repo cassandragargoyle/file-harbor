@@ -11,7 +11,7 @@ import path from 'path';
 import fs from 'fs';
 
 function copyNativeModules(buildPath: string) {
-  const modules = ['better-sqlite3', 'bindings', 'file-uri-to-path'];
+  const modules = ['better-sqlite3'];
   for (const mod of modules) {
     const src = path.resolve(__dirname, 'node_modules', mod);
     const dest = path.resolve(buildPath, 'node_modules', mod);
@@ -25,7 +25,7 @@ const config: ForgeConfig = {
   packagerConfig: {
     name: 'File Harbor',
     asar: {
-      unpack: '{**/better-sqlite3/**,**/bindings/**,**/file-uri-to-path/**}',
+      unpack: '**/better-sqlite3/**',
     },
     icon: path.resolve(__dirname, 'assets', 'icon'),
     extraResource: ['./drizzle'],
