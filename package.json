@@ -60,5 +60,11 @@
     "typescript": "^5.8.0",
     "vite": "^6.2.0",
     "vitest": "^4.0.18"
+  },
+  "allowScripts": {
+    "electron@35.7.5": true,
+    "esbuild@0.18.20": true,
+    "esbuild@0.19.12": true,
+    "esbuild@0.25.12": true
   }
 }
